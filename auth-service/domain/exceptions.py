@@ -39,7 +39,7 @@ class UserNotFoundError(DomainError):
         self.identifier = identifier
         super().__init__(f"Account not found: {identifier}")
         
-class passwordMismatchError(DomainError):
+class PasswordMismatchError(DomainError):
     """raised when passoword and confirmPassword doesn't match during registration or reset"""
     
     def __init__(self):
