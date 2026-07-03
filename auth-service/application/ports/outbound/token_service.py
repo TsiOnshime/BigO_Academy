@@ -66,3 +66,20 @@ class TokenServicePort(ABC):
         Called on: password reset, password change, account deactivation —
         any event that should force re-login on all devices.
         """
+    @abstractmethod
+    def generate_reset_token(self, user: User) -> str:
+        """
+        Generate a short-lived reset token (5 minutes).
+        This token only grants permission to call reset_password.
+        Called on: POST /auth/password/verify-otp
+        """
+        
+
+    @abstractmethod
+    def validate_reset_token(self, token: str) -> TokenPayload:
+        """
+        Validate a reset token and return its payload.
+        Raises InvalidTokenError if invalid or expired.
+        Called on: POST /auth/password/reset
+        """
+        
