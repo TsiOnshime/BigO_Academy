@@ -52,23 +52,33 @@ class FakeTokenService(TokenServicePort):
             refresh_token=f"fake_refresh_{user.id}",
         )
 
-    def validate_access_token(self, token: str) -> TokenPayload:
+    def validate_refresh_token(self, token: str) -> TokenPayload:
         if token in self._revoked:
-            raise InvalidTokenError()
-        # Extract user_id from our fake token format
-        user_id = UUID(token.replace("fake_access_", ""))
+            raise InvalidTokenError("Token has been revoked")
+        # Guard against garbage tokens that don't match our fake format
+        if not token.startswith("fake_refresh_"):
+            raise InvalidTokenError("Invalid token format")
+        try:
+            user_id = UUID(token.replace("fake_refresh_", ""))
+        except ValueError:
+            raise InvalidTokenError("Invalid token")
+        if user_id in self._revoked_users:
+            raise InvalidTokenError("All tokens revoked for this user")
         return TokenPayload(
             user_id=user_id,
             email="test@example.com",
             role="STUDENT",
         )
 
-    def validate_refresh_token(self, token: str) -> TokenPayload:
+    def validate_access_token(self, token: str) -> TokenPayload:
         if token in self._revoked:
-            raise InvalidTokenError("Token has been revoked")
-        user_id = UUID(token.replace("fake_refresh_", ""))
-        if user_id in self._revoked_users:
-            raise InvalidTokenError("All tokens revoked for this user")
+            raise InvalidTokenError()
+        if not token.startswith("fake_access_"):
+            raise InvalidTokenError("Invalid token format")
+        try:
+            user_id = UUID(token.replace("fake_access_", ""))
+        except ValueError:
+            raise InvalidTokenError("Invalid token")
         return TokenPayload(
             user_id=user_id,
             email="test@example.com",

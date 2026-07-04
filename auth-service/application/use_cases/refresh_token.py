@@ -44,7 +44,7 @@ class RefreshTokenUseCase:
             refresh_token = token_pair.refresh_token,
             token_type=token_pair.token_type,
             expires_in=token_pair.expires_in,
-            user=User
+            user=user
             
             
         )
