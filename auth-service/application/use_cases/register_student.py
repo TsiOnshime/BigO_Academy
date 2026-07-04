@@ -76,6 +76,6 @@ class RegisterStudentUseCase:
             access_token=token_pair.access_token, 
             refresh_token=token_pair.refresh_token, 
             token_type=token_pair.token_type,
-            expires_is=token_pair.expires_in,
+            expires_in=token_pair.expires_in,
             user=saved_user,
         )
