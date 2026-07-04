@@ -18,9 +18,9 @@ class ResetPasswordUseCase:
     def __init__(self, user_repository: UserRepositoryPort,
                 token_service: TokenServicePort, 
                 password_hasher: PasswordHasherPort):
-        self.user_repository = UserRepositoryPort
-        self.token_service = TokenServicePort
-        self.password_hasher = PasswordHasherPort
+        self.user_repository = user_repository
+        self.token_service = token_service
+        self.password_hasher = password_hasher
         
     def execute(self, command: ResetPasswordCommand) -> None:
         if command.new_password != command.confirm_password:

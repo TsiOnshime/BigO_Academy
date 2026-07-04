@@ -48,7 +48,7 @@ class AdminResetPasswordUseCase:
         self.user_repository.save(user)
 
         
-        self.token_service.revoke_all_tokens_for_user(command.user_id)
+        self.token_service.revoke_all_tokens_for_users(command.user_id)
 
     
         self.email_service.send_temporary_password_email(

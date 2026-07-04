@@ -94,17 +94,22 @@ class FakeTokenService(TokenServicePort):
     def generate_reset_token(self, user) -> str:
         return f"fake_reset_{user.id}"
 
+
+
     def validate_reset_token(self, token: str) -> TokenPayload:
         if token in self._revoked:
             raise InvalidTokenError()
-        user_id = UUID(token.replace("fake_reset_", ""))
+        if not token.startswith("fake_reset_"):
+            raise InvalidTokenError("Invalid reset token format")
+        try:
+            user_id = UUID(token.replace("fake_reset_", ""))
+        except ValueError:
+            raise InvalidTokenError("Invalid reset token")
         return TokenPayload(
             user_id=user_id,
             email="test@example.com",
             role="STUDENT",
         )
-
-
 class FakePasswordHasher(PasswordHasherPort):
     """
     Does not actually hash — just prefixes with 'hashed_'

@@ -29,7 +29,7 @@ class CreateAccountUseCase:
         
     def execute(self, command: CreateAccountCommand) -> CreateAccountResult:
         if self.user_repository.email_exists(command.email):
-            raise EmailAlreadyExistsError()
+            raise EmailAlreadyExistsError(command.email)
 
         alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
         temporary_password = ''.join(secrets.choice(alphabet) for _ in range(12))
