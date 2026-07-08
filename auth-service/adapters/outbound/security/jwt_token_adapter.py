@@ -15,6 +15,25 @@ each stored token's payload (without verifying signature/expiry — we only
 need the claim, and we trust rows we ourselves wrote), and blacklist the
 ones whose "user_id" claim matches. This is O(n) over outstanding tokens,
 which is fine at the scale this service is expected to run at.
+
+CVE-2024-22513 WORKAROUND — read before touching revoke_*:
+djangorestframework-simplejwt 5.5.1 (the version pinned in requirements.txt)
+patched a real security bug (disabled accounts could keep using tokens) by
+making Token.blacklist() look up the token's user via
+`get_user_model().objects.get(**{USER_ID_FIELD: user_id})` before honoring
+the blacklist call. That assumes every token's user_id claim resolves to a
+row in AUTH_USER_MODEL. We never set AUTH_USER_MODEL (Option 1: fully
+custom auth), so it defaults to Django's built-in auth.User, whose `id` is
+an integer — and our user_id claim is a UUID string. Calling .blacklist()
+directly now crashes with "Field 'id' expected a number but got '<uuid>'".
+
+Fix: _blacklist_without_user_check() below replicates exactly what
+.blacklist() used to do pre-5.5.1 — get_or_create an OutstandingToken by
+jti, then get_or_create a BlacklistedToken pointing at it — without the new
+user lookup. check_blacklist() (used during normal token verification) only
+queries BlacklistedToken by jti and never touches AUTH_USER_MODEL, so this
+fully preserves revocation semantics; it only bypasses the part of
+.blacklist() that's incompatible with a fully custom user model.
 """
 from datetime import timedelta
 from uuid import UUID
@@ -24,6 +43,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken, Token, TokenError
+from rest_framework_simplejwt.utils import datetime_from_epoch
 
 from application.ports.outbound.token_service import TokenPair, TokenPayload, TokenServicePort
 from domain.enums import UserRole
@@ -33,6 +53,7 @@ from domain.models import User
 USER_ID_CLAIM = "user_id"
 EMAIL_CLAIM = "email"
 ROLE_CLAIM = "role"
+JTI_CLAIM = "jti"
 
 
 class ResetToken(Token):
@@ -118,7 +139,7 @@ class JWTTokenAdapter(TokenServicePort):
         except TokenError:
             # Already invalid/expired — nothing meaningful to revoke.
             return
-        refresh.blacklist()
+        self._blacklist_without_user_check(refresh)
 
     def revoke_all_tokens_for_users(self, user_id: UUID) -> None:
         already_blacklisted_ids = BlacklistedToken.objects.values_list(
@@ -136,14 +157,30 @@ class JWTTokenAdapter(TokenServicePort):
                 continue
 
             if decoded.get(USER_ID_CLAIM) == str(user_id):
-                try:
-                    decoded.blacklist()
-                except TokenError:
-                    continue
+                self._blacklist_without_user_check(decoded)
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _blacklist_without_user_check(token) -> None:
+        """
+        Replicates pre-5.5.1 Token.blacklist() — get_or_create an
+        OutstandingToken by jti, then get_or_create a BlacklistedToken for
+        it — WITHOUT the AUTH_USER_MODEL lookup that 5.5.1 added. See the
+        CVE-2024-22513 note in the module docstring for why this exists.
+        """
+        jti = token[JTI_CLAIM]
+        exp = token["exp"]
+        outstanding, _ = OutstandingToken.objects.get_or_create(
+            jti=jti,
+            defaults={
+                "token": str(token),
+                "expires_at": datetime_from_epoch(exp),
+            },
+        )
+        BlacklistedToken.objects.get_or_create(token=outstanding)
 
     @staticmethod
     def _to_payload(token) -> TokenPayload:

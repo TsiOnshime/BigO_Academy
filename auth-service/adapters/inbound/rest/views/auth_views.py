@@ -112,7 +112,7 @@ class CurrentUserView(BaseAuthView):
         try:
             payload = self.authenticate(request)
             use_case = get_current_user_use_case()
-            user = use_case.execute(user_id=payload.user_id)
+            user = use_case.execute(payload.user_id)
         except Exception as exc:
             return self.handle_domain_exception(exc)
 
