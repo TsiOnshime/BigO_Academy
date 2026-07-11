@@ -44,7 +44,10 @@ class MentorshipNotFoundError(DomainError):
     def __init__(self, mentorship_id: str):
         self.mentorship_id = mentorship_id
         super().__init__(f"Mentorship not found: {mentorship_id}")
-        
+class MentorshipSessionNotFoundError(DomainError):
+    def __init__(self, session_id: str):
+        self.session_id =session_id
+        super().__init__(f"Mentorship session not found: {session_id}") 
 class WarningNotFoundError(DomainError):
     def __init__(self, warning_id: str):
         self.warning_id = warning_id

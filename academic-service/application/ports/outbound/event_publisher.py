@@ -40,7 +40,7 @@ class EventPublisherPort(ABC):
     def publish_teacher_assigned_to_cohort(self, teacher_id: UUID, cohort_id: UUID) -> None:
         """Published when: admin assigns teacher to cohort."""
     @abstractmethod
-    def publish_teacher_unassigned_to_cohort(self, teacher_id: UUID, cohort_id: UUID) -> None:
+    def publish_teacher_unassigned_from_cohort(self, teacher_id: UUID, cohort_id: UUID) -> None:
         """Published when: admin removes teacher from cohort"""
     # Cohort Events
     @abstractmethod
