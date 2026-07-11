@@ -24,7 +24,7 @@ class CreateTopicUseCase:
     def execute(self, command: CreateTopicCommand) -> Topic:
         cohort = self.cohort_repository.find_by_id(command.cohort_id)
         if cohort is None:
-            raise CohortNotFoundError(str(command.id))
+            raise CohortNotFoundError(str(command.cohort_id))
         
         new_topic = Topic(
             id=uuid4(),
