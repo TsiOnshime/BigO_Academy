@@ -39,7 +39,7 @@ class CreateStudentUseCase:
             raise CohortArchivedError(str(command.cohort_id))
         
         new_student = Student(
-            id=uuid4,
+            id=uuid4(),
             user_id=command.user_id,
             full_name=command.full_name,
             email=command.email,
