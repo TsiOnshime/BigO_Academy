@@ -409,3 +409,30 @@ def get_list_mentorship_sessions_use_case() -> ListMentorshipSessionsUseCase:
 
 def get_update_mentorship_session_use_case() -> UpdateMentorshipSessionUseCase:
     return UpdateMentorshipSessionUseCase(mentorship_repository=_mentorship_repository)
+
+# ── Read-only repository accessors ──────────────────────────────────────
+# Added for the REST views layer (adapters/inbound/rest/views/). A few
+# response schemas need a "view-supplied" denormalized field that has no
+# use case of its own -- e.g. StudentResponse.cohortName, ContestResults
+# Response.contestTitle, ProblemProgressResponse.problemTitle (see the
+# docstrings in adapters/inbound/rest/serializers/*.py, which explicitly
+# call out "the view looks this up via <x>_repository"). Rather than
+# have views import the concrete Django*Repository classes directly
+# (which would bypass this composition root), the views ask for the
+# already-constructed singleton through these thin accessors. This does
+# NOT go through a use case because there's no business rule involved --
+# it's a plain read used only to render a response field.
+def get_student_repository():
+    return _student_repository
+
+
+def get_teacher_repository():
+    return _teacher_repository
+
+
+def get_cohort_repository():
+    return _cohort_repository
+
+
+def get_curriculum_repository():
+    return _curriculum_repository
