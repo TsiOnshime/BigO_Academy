@@ -94,7 +94,7 @@ class DismissWarningView(BaseAcademicView):
             warning = use_case.execute(
                 DismissWarningCommand(
                     warning_id=warning_id,
-                    dismissed_by=UUID(payload["userId"]),
+                    dismissed_by=UUID(payload["user_id"]),
                     note=data["note"],
                 )
             )
