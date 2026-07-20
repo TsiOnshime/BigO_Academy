@@ -1,0 +1,14 @@
+asgiref==3.11.1
+Django==6.0.6
+djangorestframework==3.17.1
+psycopg2-binary==2.9.12
+python-decouple==3.8
+sqlparse==0.5.5
+pytest==9.1.1
+pytest-django==4.12.0
+
+# Added once the adapters layer is built (not needed for domain/application):
+# confluent-kafka==2.15.0   — event publishing/consuming (see academic-service)
+# PyJWT==2.13.0             — JWT validation middleware (see academic-service)
+# A payment gateway SDK (e.g. stripe, or Chapa's HTTP API via requests) —
+#   whichever provider gets chosen for the PaymentGatewayPort adapter.
