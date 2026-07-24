@@ -43,6 +43,18 @@ class TeacherPayoutNotFoundError(DomainError):
         super().__init__(f"Teacher payout not found: {payout_id}")
 
 
+class StudentPaymentNotFoundError(DomainError):
+    def __init__(self, payment_id: str):
+        self.payment_id = payment_id
+        super().__init__(f"Student payment not found: {payment_id}")
+
+
+class TeacherPaymentNotFoundError(DomainError):
+    def __init__(self, payment_id: str):
+        self.payment_id = payment_id
+        super().__init__(f"Teacher payment not found: {payment_id}")
+
+
 # ── Conflict Errors ─────────────────────────────────────────────────────────
 
 
@@ -73,6 +85,18 @@ class PayoutAlreadyProcessedError(DomainError):
     def __init__(self, payout_id: str):
         self.payout_id = payout_id
         super().__init__(f"Payout {payout_id} has already been processed")
+
+
+class DuplicatePaymentError(DomainError):
+    """Raised when a student payment (or reference submission) already
+    exists for the given student and payment month."""
+
+    def __init__(self, student_id: str, payment_month: str):
+        self.student_id = student_id
+        self.payment_month = payment_month
+        super().__init__(
+            f"Payment already recorded for student {student_id}, month {payment_month}"
+        )
 
 
 class PayoutPeriodAlreadyComputedError(DomainError):
@@ -147,6 +171,32 @@ class InvalidPayoutStatusTransitionError(DomainError):
         self.target_status = target_status
         super().__init__(
             f"Invalid payout status transition: {current_status} → {target_status}"
+        )
+
+
+class InvalidPaymentStatusTransitionError(DomainError):
+    """
+    Raised when attempting an invalid status transition on a student or
+    teacher payment record.
+
+    Valid StudentPayment transitions:
+    PENDING → PAID
+    PENDING → FAILED
+    PENDING → OVERDUE
+    OVERDUE → PAID
+    OVERDUE → FAILED
+
+    Valid TeacherPayment transitions:
+    PENDING → PAID
+    PENDING → CANCELLED
+    PENDING → FAILED
+    """
+
+    def __init__(self, current_status: str, target_status: str):
+        self.current_status = current_status
+        self.target_status = target_status
+        super().__init__(
+            f"Invalid payment status transition: {current_status} → {target_status}"
         )
 
 
