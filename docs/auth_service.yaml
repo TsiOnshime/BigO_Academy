@@ -1,0 +1,1022 @@
+openapi: 3.0.3
+info:
+  title: A2SV Community Platform — Auth Service API
+  description: |
+    REST API for the Auth Service — responsible for all authentication and
+    authorization on the platform.
+
+    ## Responsibilities
+    - Issue and validate JWT access tokens and refresh tokens
+    - Handle Email/Password, Google OAuth, and GitHub OAuth login
+    - Manage student self-registration
+    - Admin-driven account creation for Teachers and Admins
+    - Password reset via email OTP
+    - Token refresh and logout
+
+    ## Token Strategy
+    | Token        | Lifetime    | Storage Recommendation     |
+    |--------------|-------------|----------------------------|
+    | Access Token | 15 minutes  | Memory / Authorization header |
+    | Refresh Token| 7 days      | HttpOnly cookie or secure storage |
+
+    ## Role Summary
+    | Role    | How account is created            |
+    |---------|-----------------------------------|
+    | STUDENT | Self-registers via /auth/register |
+    | TEACHER | Created by Admin                  |
+    | ADMIN   | Created by Admin                  |
+
+    ## How other services use this
+    All other services (Academic, Analytics, Payment) receive the JWT in the
+    `Authorization: Bearer <token>` header and validate it independently.
+    The token payload carries `userId`, `role`, and `email`.
+
+  version: 1.0.0
+  contact:
+    name: A2SV Community Platform Team
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://api.a2sv-community.com/api/v1
+    description: Production
+
+tags:
+  - name: Authentication
+    description: Login, register, logout, and token operations
+  - name: OAuth
+    description: Google and GitHub OAuth 2.0 flows
+  - name: Password Reset
+    description: Forgot password and OTP verification
+  - name: Account Management
+    description: Admin-only account creation and role management
+
+# ─────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────
+paths:
+
+  # ═══════════════════════════════════════════
+  # AUTHENTICATION
+  # ═══════════════════════════════════════════
+
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new student account
+      description: |
+        Self-registration endpoint for Students only.
+        Teachers and Admins cannot self-register — their accounts are created
+        by an Admin via `POST /auth/admin/accounts`.
+
+        After successful registration the account is created but the student
+        is NOT yet assigned to a cohort. That is done by the Admin in the
+        Academic Service after admission.
+
+        Returns an access token and refresh token so the student can
+        immediately access the platform.
+      operationId: registerStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Student registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 409
+                error: CONFLICT
+                message: An account with this email already exists
+                timestamp: '2025-06-17T10:00:00Z'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login with email and password
+      description: |
+        Authenticates a user with email and password.
+        Works for all roles (Student, Teacher, Admin).
+        Returns a short-lived access token (15 min) and a refresh token (7 days).
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 401
+                error: UNAUTHORIZED
+                message: Invalid email or password
+                timestamp: '2025-06-17T10:00:00Z'
+        '403':
+          description: Account is inactive or deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 403
+                error: FORBIDDEN
+                message: Your account has been deactivated. Contact an administrator.
+                timestamp: '2025-06-17T10:00:00Z'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      description: |
+        Exchanges a valid refresh token for a new access token and a new refresh token.
+        The old refresh token is invalidated after use (token rotation).
+
+        If the refresh token has expired or been revoked, the user must log in again.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Refresh token is invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 401
+                error: UNAUTHORIZED
+                message: Refresh token is invalid or has expired
+                timestamp: '2025-06-17T10:00:00Z'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout and revoke tokens
+      description: |
+        Revokes the provided refresh token, effectively logging the user out.
+        The access token will naturally expire after 15 minutes.
+        Requires a valid access token in the Authorization header.
+      operationId: logout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '204':
+          description: Logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current authenticated user
+      description: |
+        Returns the profile of the currently authenticated user based on the JWT.
+        Useful for the frontend to identify the logged-in user's role and basic info
+        after a page refresh.
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ═══════════════════════════════════════════
+  # OAUTH
+  # ═══════════════════════════════════════════
+
+  /auth/oauth/google:
+    get:
+      tags: [OAuth]
+      summary: Initiate Google OAuth login
+      description: |
+        Redirects the user to Google's OAuth 2.0 authorization page.
+        The frontend should navigate the user to this URL.
+        After Google authenticates the user, Google redirects back to
+        `GET /auth/oauth/google/callback` with an authorization code.
+      operationId: initiateGoogleOAuth
+      responses:
+        '302':
+          description: Redirect to Google OAuth authorization page
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: Google OAuth authorization URL
+
+  /auth/oauth/google/callback:
+    get:
+      tags: [OAuth]
+      summary: Google OAuth callback
+      description: |
+        Handles the callback from Google after user authorization.
+        Exchanges the authorization code for a Google access token,
+        retrieves the user's profile, and either:
+        - Creates a new Student account (if first-time Google login), or
+        - Logs in the existing account linked to that Google email.
+
+        Returns JWT access token and refresh token.
+        **Note:** Teacher and Admin accounts created by Admin can link their
+        Google account on first login if the email matches.
+      operationId: googleOAuthCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code returned by Google
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+          description: CSRF state parameter
+      responses:
+        '200':
+          description: OAuth login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid or missing authorization code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Account is deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/oauth/github:
+    get:
+      tags: [OAuth]
+      summary: Initiate GitHub OAuth login
+      description: |
+        Redirects the user to GitHub's OAuth authorization page.
+        After GitHub authenticates the user, GitHub redirects back to
+        `GET /auth/oauth/github/callback` with an authorization code.
+      operationId: initiateGitHubOAuth
+      responses:
+        '302':
+          description: Redirect to GitHub OAuth authorization page
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: GitHub OAuth authorization URL
+
+  /auth/oauth/github/callback:
+    get:
+      tags: [OAuth]
+      summary: GitHub OAuth callback
+      description: |
+        Handles the callback from GitHub after user authorization.
+        Exchanges the authorization code for a GitHub access token,
+        retrieves the user's profile, and either:
+        - Creates a new Student account (if first-time GitHub login), or
+        - Logs in the existing account linked to that GitHub email.
+
+        Returns JWT access token and refresh token.
+      operationId: githubOAuthCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code returned by GitHub
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+          description: CSRF state parameter
+      responses:
+        '200':
+          description: OAuth login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid or missing authorization code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Account is deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ═══════════════════════════════════════════
+  # PASSWORD RESET
+  # ═══════════════════════════════════════════
+
+  /auth/password/forgot:
+    post:
+      tags: [Password Reset]
+      summary: Request a password reset OTP
+      description: |
+        Sends a 6-digit OTP to the user's registered email address.
+        The OTP is valid for 10 minutes.
+
+        Always returns 200 regardless of whether the email exists,
+        to prevent user enumeration attacks.
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: OTP sent if email exists (always returns 200)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: If an account with that email exists, a reset code has been sent.
+
+  /auth/password/verify-otp:
+    post:
+      tags: [Password Reset]
+      summary: Verify the password reset OTP
+      description: |
+        Verifies the 6-digit OTP sent to the user's email.
+        If valid, returns a short-lived reset token (5 minutes) to be used
+        in `POST /auth/password/reset`.
+
+        The OTP is single-use and invalidated after verification.
+      operationId: verifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpVerifiedResponse'
+        '400':
+          description: OTP is invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 400
+                error: BAD_REQUEST
+                message: OTP is invalid or has expired
+                timestamp: '2025-06-17T10:00:00Z'
+
+  /auth/password/reset:
+    post:
+      tags: [Password Reset]
+      summary: Reset password using reset token
+      description: |
+        Sets a new password using the short-lived reset token obtained from
+        `POST /auth/password/verify-otp`.
+
+        After a successful reset, all existing refresh tokens for the account
+        are revoked, forcing re-login on all devices.
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Password has been reset successfully. Please log in again.
+        '400':
+          description: Reset token is invalid or expired, or passwords do not match
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/password/change:
+    post:
+      tags: [Password Reset]
+      summary: Change password while logged in
+      description: |
+        Allows an authenticated user to change their password by providing
+        their current password and a new one.
+        Revokes all existing refresh tokens after a successful change.
+      operationId: changePassword
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: Password changed successfully. Please log in again.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 401
+                error: UNAUTHORIZED
+                message: Current password is incorrect
+                timestamp: '2025-06-17T10:00:00Z'
+
+  # ═══════════════════════════════════════════
+  # ACCOUNT MANAGEMENT (Admin only)
+  # ═══════════════════════════════════════════
+
+  /auth/admin/accounts:
+    post:
+      tags: [Account Management]
+      summary: Create a Teacher or Admin account
+      description: |
+        Creates an auth account for a Teacher or Admin.
+        Only Admins can call this endpoint.
+
+        After creation the account is INACTIVE by default.
+        For Teachers: the Admin must then activate the account in the
+        Academic Service (`POST /teachers/{teacherId}/activate`).
+
+        A temporary password is sent to the provided email address.
+        The user must change it on first login.
+      operationId: createAccount
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/admin/accounts/{userId}:
+    get:
+      tags: [Account Management]
+      summary: Get account details
+      description: Returns the auth account details for a user. Admin only.
+      operationId: getAccount
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Account retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/admin/accounts/{userId}/deactivate:
+    post:
+      tags: [Account Management]
+      summary: Deactivate a user account
+      description: |
+        Deactivates a user account, preventing login.
+        All existing refresh tokens for the account are immediately revoked.
+        Only Admins can deactivate accounts.
+      operationId: deactivateAccount
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Account deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/admin/accounts/{userId}/activate:
+    post:
+      tags: [Account Management]
+      summary: Activate a user account
+      description: |
+        Reactivates a previously deactivated account.
+        Only Admins can activate accounts.
+      operationId: activateAccount
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Account activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/admin/accounts/{userId}/reset-password:
+    post:
+      tags: [Account Management]
+      summary: Admin force-reset a user's password
+      description: |
+        Forces a password reset for a user account.
+        Generates a new temporary password and sends it to the user's email.
+        All existing refresh tokens are revoked.
+        Only Admins can force-reset passwords.
+      operationId: adminResetPassword
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: A temporary password has been sent to the user's email.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ─────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token issued by the Auth Service.
+        Payload contains: `userId`, `email`, `role`.
+        Lifetime: 15 minutes.
+
+  # ── PARAMETERS ───────────────────────────────
+
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Unique identifier of the user account
+
+  # ── RESPONSES ────────────────────────────────
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT access token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            error: UNAUTHORIZED
+            message: Authentication token is missing or invalid
+            timestamp: '2025-06-17T10:00:00Z'
+
+    Forbidden:
+      description: Authenticated user lacks permission for this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 403
+            error: FORBIDDEN
+            message: You do not have permission to perform this action
+            timestamp: '2025-06-17T10:00:00Z'
+
+    NotFound:
+      description: Account not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            error: NOT_FOUND
+            message: Account not found
+            timestamp: '2025-06-17T10:00:00Z'
+
+    BadRequest:
+      description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            error: BAD_REQUEST
+            message: Validation failed
+            timestamp: '2025-06-17T10:00:00Z'
+
+  # ── SCHEMAS ──────────────────────────────────
+
+  schemas:
+
+    # -- Shared --
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: BAD_REQUEST
+        message:
+          type: string
+          example: Validation failed
+        timestamp:
+          type: string
+          format: date-time
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    # -- Enums --
+
+    UserRole:
+      type: string
+      enum: [STUDENT, TEACHER, ADMIN]
+
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+      description: |
+        ACTIVE — account can log in.
+        INACTIVE — account is deactivated; login is blocked.
+
+    OAuthProvider:
+      type: string
+      enum: [GOOGLE, GITHUB]
+
+    # -- Auth Schemas --
+
+    RegisterRequest:
+      type: object
+      required: [fullName, email, password, confirmPassword]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Abel Girma
+        email:
+          type: string
+          format: email
+          example: abel@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Must be at least 8 characters
+          example: SecurePass123!
+        confirmPassword:
+          type: string
+          format: password
+          description: Must match password
+          example: SecurePass123!
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abel@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+
+    AuthResponse:
+      type: object
+      description: Returned on successful login, registration, token refresh, or OAuth callback
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token. Valid for 15 minutes.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: Opaque refresh token. Valid for 7 days.
+          example: dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Access token lifetime in seconds
+          example: 900
+        user:
+          $ref: '#/components/schemas/CurrentUserResponse'
+
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          description: The refresh token to exchange for a new token pair
+          example: dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...
+
+    LogoutRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          description: The refresh token to revoke
+          example: dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...
+
+    CurrentUserResponse:
+      type: object
+      description: Basic identity info embedded in AuthResponse and returned by GET /auth/me
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The user's ID in the Auth Service (same ID used across all services)
+        email:
+          type: string
+          format: email
+          example: abel@example.com
+        fullName:
+          type: string
+          example: Abel Girma
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        oauthProviders:
+          type: array
+          description: OAuth providers linked to this account
+          items:
+            $ref: '#/components/schemas/OAuthProvider'
+          example: [GOOGLE]
+        mustChangePassword:
+          type: boolean
+          description: True if the user is on a temporary admin-set password
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+
+    # -- Password Reset Schemas --
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abel@example.com
+
+    VerifyOtpRequest:
+      type: object
+      required: [email, otp]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abel@example.com
+        otp:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+          description: 6-digit numeric OTP sent to the user's email
+          example: '482910'
+
+    OtpVerifiedResponse:
+      type: object
+      description: Returned after successful OTP verification
+      properties:
+        resetToken:
+          type: string
+          description: Short-lived token (5 minutes) to authorize the password reset
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: Reset token lifetime in seconds
+          example: 300
+
+    ResetPasswordRequest:
+      type: object
+      required: [resetToken, newPassword, confirmPassword]
+      properties:
+        resetToken:
+          type: string
+          description: Short-lived reset token from POST /auth/password/verify-otp
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          example: NewSecurePass456!
+        confirmPassword:
+          type: string
+          format: password
+          example: NewSecurePass456!
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword, confirmPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          example: OldPass123!
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          example: NewSecurePass456!
+        confirmPassword:
+          type: string
+          format: password
+          example: NewSecurePass456!
+
+    # -- Account Management Schemas --
+
+    CreateAccountRequest:
+      type: object
+      required: [fullName, email, role]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Meron Tadesse
+        email:
+          type: string
+          format: email
+          example: meron@a2sv.org
+        role:
+          type: string
+          enum: [TEACHER, ADMIN]
+          description: Only TEACHER or ADMIN can be created this way. Students self-register.
+
+    AccountResponse:
+      type: object
+      description: Auth account record returned by admin account management endpoints
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        mustChangePassword:
+          type: boolean
+          description: True until the user changes their temporary password
+        oauthProviders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OAuthProvider'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
