@@ -46,3 +46,17 @@ class PayoutStatus(str, Enum):
     APPROVED = "APPROVED"
     PAID = "PAID"
     FAILED = "FAILED"
+
+
+class StudentPaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    OVERDUE = "OVERDUE"
+    FAILED = "FAILED"
+
+
+class TeacherPaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"
+    FAILED = "FAILED"

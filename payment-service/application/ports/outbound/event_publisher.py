@@ -1,70 +1,53 @@
-from abc import ABC, abstractmethod
-
-from domain.models import Invoice, Subscription, TeacherPayout, Transaction
-
-
-class EventPublisherPort(ABC):
-    """
-    Outbound events published to Kafka once the adapters layer exists.
-    Method shape follows academic-service's EventPublisherPort: pass the
-    full domain entity where one exists, rather than loose primitive
-    fields, so the adapter has everything it needs to build the payload.
-    """
-
-    # ── Subscription Events ─────────────────────────────────────────────
-
-    @abstractmethod
-    def publish_subscription_created(self, subscription: Subscription) -> None:
-        ...
-
-    @abstractmethod
-    def publish_subscription_status_changed(
-        self, subscription: Subscription, old_status: str
-    ) -> None:
-        ...
-
-    @abstractmethod
-    def publish_subscription_cancelled(self, subscription: Subscription) -> None:
-        ...
-
-    # ── Invoice Events ───────────────────────────────────────────────────
-
-    @abstractmethod
-    def publish_invoice_issued(self, invoice: Invoice) -> None:
-        ...
-
-    @abstractmethod
-    def publish_invoice_paid(self, invoice: Invoice) -> None:
-        ...
-
-    @abstractmethod
-    def publish_invoice_overdue(self, invoice: Invoice) -> None:
-        ...
-
-    # ── Transaction Events ───────────────────────────────────────────────
-
-    @abstractmethod
-    def publish_transaction_completed(self, transaction: Transaction) -> None:
-        ...
-
-    @abstractmethod
-    def publish_transaction_failed(self, transaction: Transaction) -> None:
-        ...
-
-    @abstractmethod
-    def publish_transaction_reversed(self, transaction: Transaction) -> None:
-        ...
-
-    # ── Payout Events ────────────────────────────────────────────────────
-
-    @abstractmethod
-    def publish_payout_approved(self, payout: TeacherPayout) -> None:
-        ...
-
-    @abstractmethod
-    def publish_payout_paid(self, payout: TeacherPayout) -> None:
-        ...
-
-    @abstractmethod
-    def publish_payout_failed(self, payout: TeacherPayout) -> None:
-        ...
+from abc import ABC, abstractmethod 
+ 
+from domain.models import StudentPayment, TeacherPayment 
+ 
+ 
+class EventPublisherPort(ABC): 
+    """ 
+    Abstract contract for publishing payment events to Kafka. 
+    Consumed by Analytics Service (future) for payment metrics. 
+    """ 
+ 
+    @abstractmethod 
+    def publish_student_payment_recorded( 
+        self, payment: StudentPayment 
+    ) -> None: 
+        """ 
+        Published when: admin records a student payment. 
+        Analytics uses this for payment statistics. 
+        """ 
+        ... 
+ 
+    @abstractmethod 
+    def publish_student_payment_status_changed( 
+        self, 
+        payment: StudentPayment, 
+        old_status: str, 
+    ) -> None: 
+        """ 
+        Published when: admin verifies, rejects, or marks overdue. 
+        Analytics uses this for overdue statistics. 
+        """ 
+        ... 
+ 
+    @abstractmethod 
+    def publish_teacher_payment_recorded( 
+        self, payment: TeacherPayment 
+    ) -> None: 
+        """ 
+        Published when: admin records a teacher payment. 
+        Analytics uses this for teacher payment metrics. 
+        """ 
+        ... 
+ 
+    @abstractmethod 
+    def publish_teacher_payment_status_changed( 
+        self, 
+        payment: TeacherPayment, 
+        old_status: str, 
+    ) -> None: 
+        """ 
+        Published when: admin updates teacher payment status. 
+        Analytics uses this for payment monitoring. 
+        """ 
