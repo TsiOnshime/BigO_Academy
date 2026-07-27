@@ -9,6 +9,7 @@ vs. extrapolated.
 """
 from application.use_cases.login import LoginCommand
 from application.use_cases.logout import LogoutCommand
+from application.use_cases.get_current_user import GetCurrentUserCommand
 from application.use_cases.refresh_token import RefreshTokenCommand
 from application.use_cases.register_student import RegisterStudentCommand
 from infrastructure.config.dependencies import (
@@ -112,7 +113,7 @@ class CurrentUserView(BaseAuthView):
         try:
             payload = self.authenticate(request)
             use_case = get_current_user_use_case()
-            user = use_case.execute(payload.user_id)
+            user = use_case.execute(GetCurrentUserCommand(user_id=payload.user_id))
         except Exception as exc:
             return self.handle_domain_exception(exc)
 

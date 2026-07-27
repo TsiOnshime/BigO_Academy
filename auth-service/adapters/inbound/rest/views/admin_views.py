@@ -13,6 +13,7 @@ from application.use_cases.activate_account import ActivateAccountCommand
 from application.use_cases.admin_reset_password import AdminResetPasswordCommand
 from application.use_cases.create_account import CreateAccountCommand
 from application.use_cases.deactivate_account import DeactivateAccountCommand
+from application.use_cases.get_account import GetAccountCommand
 from infrastructure.config.dependencies import (
     get_account_use_case,
     get_activate_account_use_case,
@@ -70,7 +71,7 @@ class GetAccountView(BaseAuthView):
 
         try:
             use_case = get_account_use_case()
-            account = use_case.execute(user_id=user_id)
+            account = use_case.execute(GetAccountCommand(user_id=user_id))
         except Exception as exc:
             return self.handle_domain_exception(exc)
 
@@ -90,11 +91,11 @@ class ActivateAccountView(BaseAuthView):
 
         try:
             use_case = get_activate_account_use_case()
-            result = use_case.execute(ActivateAccountCommand(user_id=user_id))
+            user = use_case.execute(ActivateAccountCommand(user_id=user_id))
         except Exception as exc:
             return self.handle_domain_exception(exc)
 
-        return Response(AccountResponseSerializer(result.user).data)
+        return Response(AccountResponseSerializer(user).data)
 
 
 class DeactivateAccountView(BaseAuthView):
@@ -110,11 +111,11 @@ class DeactivateAccountView(BaseAuthView):
 
         try:
             use_case = get_deactivate_account_use_case()
-            result = use_case.execute(DeactivateAccountCommand(user_id=user_id))
+            user = use_case.execute(DeactivateAccountCommand(user_id=user_id))
         except Exception as exc:
             return self.handle_domain_exception(exc)
 
-        return Response(AccountResponseSerializer(result.user).data)
+        return Response(AccountResponseSerializer(user).data)
 
 
 class AdminResetPasswordView(BaseAuthView):

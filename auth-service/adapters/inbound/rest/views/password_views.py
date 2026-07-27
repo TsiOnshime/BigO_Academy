@@ -81,7 +81,9 @@ class ResetPasswordView(BaseAuthView):
             use_case = get_reset_password_use_case()
             use_case.execute(
                 ResetPasswordCommand(
-                    reset_token=data["resetToken"], new_password=data["newPassword"]
+                    reset_token=data["resetToken"],
+                    new_password=data["newPassword"],
+                    confirm_password=data["confirmPassword"],
                 )
             )
         except Exception as exc:
@@ -104,6 +106,7 @@ class ChangePasswordView(BaseAuthView):
                     user_id=payload.user_id,
                     current_password=data["currentPassword"],
                     new_password=data["newPassword"],
+                    confirm_password=data["confirmPassword"],
                 )
             )
         except Exception as exc:
