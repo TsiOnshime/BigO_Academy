@@ -63,6 +63,10 @@ class DjangoStudentAnalyticsRepository(StudentAnalyticsRepositoryPort):
     def find_all_by_cohort(self, cohort_id: UUID) -> list[StudentAnalytics]:
         queryset = StudentAnalyticsModel.objects.filter(cohort_id=cohort_id)
         return [self._to_domain(orm) for orm in queryset]
+
+    def find_all(self) -> list[StudentAnalytics]:
+        queryset = StudentAnalyticsModel.objects.all()
+        return [self._to_domain(orm) for orm in queryset]
     
     def find_top_performers(self, cohort_id: UUID, limit: int = 10) -> list[StudentAnalytics]:
         queryset = StudentAnalyticsModel.objects.filter(cohort_id=cohort_id).order_by("-performance_score")[:limit]
