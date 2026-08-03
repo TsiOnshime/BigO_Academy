@@ -35,11 +35,11 @@ class StudentListResponseSerializer(serializers.Serializer):
 
 
 class CreateStudentSerializer(serializers.Serializer):
+    userId = serializers.UUIDField(source="user_id")
     fullName = serializers.CharField(source="full_name")
     email = serializers.EmailField()
     cohortId = serializers.UUIDField(source="cohort_id")
     joinedAt = serializers.DateField(source="joined_at", required=False)
-
 
 class UpdateStudentSerializer(serializers.Serializer):
     fullName = serializers.CharField(source="full_name", required=False)

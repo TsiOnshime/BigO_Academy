@@ -26,7 +26,8 @@ class Student:
         return self.status == StudentStatus.ACTIVE
     def is_eligible_for_promotion(self) -> bool:
         return (self.year_phase == YearPhase.YEAR_ONE and self.status == StudentStatus.ACTIVE)
-    
+    def is_eligible_for_graduation(self) -> bool:
+        return (self.year_phase == YearPhase.YEAR_TWO and self.status == StudentStatus.ACTIVE)
     def can_transition_to(self, new_status: StudentStatus) -> bool:
         """
         Enforces the valid status transitions:

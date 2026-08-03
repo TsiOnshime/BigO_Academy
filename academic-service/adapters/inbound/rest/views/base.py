@@ -80,8 +80,16 @@ def error_body(status_code: int, error_code: str, message: str) -> dict:
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
-
 class BaseAcademicView(APIView):
+    def dispatch(self, request, *args, **kwargs):
+        from django.http import JsonResponse as DjangoJsonResponse
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except UnauthorizedAccessError as exc:
+            return DjangoJsonResponse(
+                error_body(status.HTTP_401_UNAUTHORIZED, "UNAUTHORIZED", str(exc)),
+                status=401,
+            )
 
     def handle_domain_exception(self, exc: Exception) -> Response:
         if isinstance(exc, _NOT_FOUND_ERRORS):

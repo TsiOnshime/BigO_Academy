@@ -27,9 +27,9 @@ class TeacherListResponseSerializer(serializers.Serializer):
 
 
 class CreateTeacherSerializer(serializers.Serializer):
+    userId = serializers.UUIDField(source="user_id")
     fullName = serializers.CharField(source="full_name")
     email = serializers.EmailField()
-
 
 class UpdateTeacherSerializer(serializers.Serializer):
     fullName = serializers.CharField(source="full_name", required=False)
