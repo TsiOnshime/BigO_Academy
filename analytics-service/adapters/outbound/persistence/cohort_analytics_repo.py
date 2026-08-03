@@ -3,7 +3,7 @@ from typing import Optional
 
 from domain.models import (
     CohortAnalytics,
-    WarningStat,
+    WarningStats,
     ProgressionStats,
 )
 from application.ports.outbound.cohort_analytics_repository import (
@@ -22,7 +22,7 @@ class DjangoCohortAnalyticsRepository(CohortAnalyticsRepositoryPort):
             average_performance_score=orm.average_performance_score,
             average_attendance_percentage=orm.average_attendance_percentage,
             average_consistency_score=orm.average_consistency_score,
-            warning_stats=WarningStat(
+            warning_stats=WarningStats(
                 total_issued=orm.total_warnings_issued,
                 total_resolved=orm.total_warnings_resolved,
                 active_warnings=orm.active_warnings,

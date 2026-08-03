@@ -14,3 +14,4 @@ class HistoricalMetric:
     performance_score: float
     consistency_score: float
     attendance_percentage: float
+    problem_solved_count: int = 0

@@ -77,7 +77,7 @@ class DjangoStudentAnalyticsRepository(StudentAnalyticsRepositoryPort):
         from django.db.models import Q
         queryset = StudentAnalyticsModel.objects.filter(cohort_id=cohort_id).filter(
             Q(attendance_percentage__lt=60.0) |
-            Q(performance_score__lt==40) |
+            Q(performance_score__lt=40) |
             Q(active_warning_count__gte=1))
         
         return [self._to_domain(orm) for orm in queryset]
