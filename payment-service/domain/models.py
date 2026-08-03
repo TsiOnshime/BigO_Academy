@@ -68,6 +68,9 @@ class StudentPayment:
     created_at: datetime = field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+    updated_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
     def is_paid(self) -> bool:
         return self.status == StudentPaymentStatus.PAID

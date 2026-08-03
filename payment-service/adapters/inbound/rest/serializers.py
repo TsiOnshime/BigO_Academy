@@ -60,7 +60,7 @@ class StudentPaymentResponseSerializer(serializers.Serializer):
     paymentMonth = serializers.CharField(source="payment_month")
     amount = serializers.FloatField()
     currency = serializers.CharField()
-    status = serializers.CharField()
+    status = serializers.SerializerMethodField()
     referenceNumber = serializers.CharField(
         source="reference_number", allow_null=True
     )
@@ -75,6 +75,12 @@ class StudentPaymentResponseSerializer(serializers.Serializer):
     createdAt = serializers.DateTimeField(source="created_at")
     updatedAt = serializers.DateTimeField(source="updated_at")
 
+    def get_status(self, obj):
+        # Extract status property dynamically from dict or object safely
+        status_val = getattr(obj, 'status', None) or (obj.get('status') if isinstance(obj, dict) else None)
+        if hasattr(status_val, 'value'):
+            return status_val.value
+        return str(status_val) if status_val is not None else None
 
 class TeacherPaymentResponseSerializer(serializers.Serializer):
     id = serializers.UUIDField()
@@ -82,7 +88,7 @@ class TeacherPaymentResponseSerializer(serializers.Serializer):
     paymentMonth = serializers.CharField(source="payment_month")
     amount = serializers.FloatField()
     currency = serializers.CharField()
-    status = serializers.CharField()
+    status = serializers.SerializerMethodField()
     note = serializers.CharField(allow_null=True)
     processedBy = serializers.UUIDField(
         source="processed_by", allow_null=True
@@ -92,7 +98,12 @@ class TeacherPaymentResponseSerializer(serializers.Serializer):
     )
     createdAt = serializers.DateTimeField(source="created_at")
     updatedAt = serializers.DateTimeField(source="updated_at")
-
+    
+    def get_status(self, obj):
+        status_val = getattr(obj, 'status', None) or (obj.get('status') if isinstance(obj, dict) else None)
+        if hasattr(status_val, 'value'):
+            return status_val.value
+        return str(status_val) if status_val is not None else None
 
 class SubscriptionStatusResponseSerializer(serializers.Serializer):
     studentId = serializers.UUIDField(source="student_id")

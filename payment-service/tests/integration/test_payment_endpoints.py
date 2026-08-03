@@ -5,8 +5,10 @@ from django.test import TestCase, Client
 import json
 from uuid import uuid4
 
+from domain.enums import StudentPaymentStatus
 
-def make_token(user_id=None, role="ADMIN", secret="test-secret"):
+
+def make_token(user_id=None, role="ADMIN", secret="django-insecure-^s0)!65!%2sgjnpdp%_v__!)353^s^sscl=mi(!tjfge_scf!9"):
     """Helper to generate a test JWT."""
     return jwt.encode({
         "userId": str(user_id or uuid4()),
@@ -42,7 +44,7 @@ class TestStudentPaymentEndpoints(TestCase):
 
         assert response.status_code == 201
         data = response.json()
-        assert data["status"] == "PENDING"
+        assert data["status"] == StudentPaymentStatus.PENDING.value
         assert data["amount"] == 500.0
         assert data["paymentMonth"] == "2025-07"
 
@@ -117,7 +119,7 @@ class TestStudentPaymentEndpoints(TestCase):
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "PAID"
+        assert data["status"] == StudentPaymentStatus.PAID.value
         assert data["verifiedAt"] is not None
 
     def test_invalid_status_transition_returns_400(self):
