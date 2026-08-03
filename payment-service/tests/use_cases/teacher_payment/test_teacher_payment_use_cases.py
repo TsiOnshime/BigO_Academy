@@ -84,7 +84,7 @@ class TestRecordTeacherPayment:
             currency="ETB", 
         )) 
  
-        assert result.payment.status == TeacherPaymentStatus.PENDING 
+        assert result.payment.status == TeacherPaymentStatus.PENDING.value
  
     def test_publishes_payment_recorded_event(self): 
         """TeacherPaymentRecorded event published.""" 

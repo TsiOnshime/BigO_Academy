@@ -1,28 +1,3 @@
-"""
-adapters/outbound/messaging/kafka_event_publisher.py — Academic Service
-
-Django/confluent-kafka implementation of EventPublisherPort.
-
-Note: this file implements the port as it actually is (17 methods, see
-application/ports/outbound/event_publisher.py) rather than the 14-event
-list in the original PDF guide — the two differ in method names,
-argument shapes, and a couple of events entirely (e.g. the port has no
-publish_student_dropped(student_id, cohort_id)-style signature; it takes
-a full Student). Always trust the port file over the guide.
-
-Topic naming: 'academic.<entity>.<event>', mirroring the
-'auth.<entity>.<event>' convention the guide uses for the consumer side
-(see infrastructure/kafka/consumers.py).
-
-Delivery: fire-and-forget with an async delivery callback that only logs.
-A single shared Producer per process; produce() buffers locally and
-poll(0) drains the delivery-report queue without blocking the caller.
-flush() is not called per-publish — that would turn every event publish
-into a network round trip. main.py / the process exit path should call
-producer.flush() during graceful shutdown so nothing is lost in the
-local buffer; a management-command-friendly helper for that is exposed
-as KafkaEventPublisher.flush().
-"""
 import json
 import logging
 from datetime import date, datetime

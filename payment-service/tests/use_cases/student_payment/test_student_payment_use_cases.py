@@ -204,7 +204,7 @@ class TestSubmitPaymentReference:
         )) 
  
         assert result.payment.reference_number == "TXN-2025-0612-ABC" 
-        assert result.payment.status == StudentPaymentStatus.PENDING 
+        assert result.payment.status == "PENDING" 
  
     def test_duplicate_reference_raises_error(self): 
         """Cannot submit reference for a month already submitted.""" 
@@ -318,7 +318,7 @@ class TestGetSubscriptionStatus:
         )) 
  
         assert result.current_month_paid is True 
-        assert result.subscription_status == StudentPaymentStatus.PAID 
+        assert result.subscription_status == "PAID" 
  
     def test_returns_pending_when_no_payments(self): 
         """Returns PENDING status for student with no payments.""" 
@@ -333,7 +333,7 @@ class TestGetSubscriptionStatus:
         )) 
  
         assert result.current_month_paid is False 
-        assert result.subscription_status == StudentPaymentStatus.PENDING 
+        assert result.subscription_status == "PENDING"
  
     def test_current_month_not_paid_when_pending(self): 
         """current_month_paid is False when payment is still PENDING.""" 

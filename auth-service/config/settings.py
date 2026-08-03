@@ -57,7 +57,9 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-INSTALLED_APPS = [
+INSTALLED_APPS = [                    
+    'rest_framework', 
+    'rest_framework_simplejwt', 
     'rest_framework_simplejwt.token_blacklist',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -66,9 +68,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
-    'rest_framework',
-    'drf_spectacular',
-    'drf_spectacular_sidecar',
     
 ]
 
@@ -149,13 +148,13 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "adapters.inbound.rest.authentication.JWTAuthentication",
-    ],
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }
+
 # config/settings.py
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

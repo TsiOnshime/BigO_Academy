@@ -16,7 +16,8 @@ views render the domain object directly, no dict assembly needed.
 """
 from rest_framework import status
 from rest_framework.response import Response
-
+import json
+from uuid import uuid4
 from application.use_cases.teacher.activate_teacher import ActivateTeacherCommand
 from application.use_cases.teacher.create_teacher import CreateTeacherCommand
 from application.use_cases.teacher.deactivate_teacher import DeactivateTeacherCommand
@@ -43,7 +44,30 @@ from .base import BaseAcademicView
 
 
 class TeacherListCreateView(BaseAcademicView):
-
+    def _create_teacher(self, email=None):
+        return self.client.post(
+            "/api/v1/teachers/",
+            data=json.dumps({
+                "fullName": "Selam Tesfaye",
+                "email": email or f"teacher_{uuid4()}@a2sv.org",
+                "userId": str(uuid4()),    # ← add this
+            }),
+            content_type="application/json",
+            **self.auth,
+        )
+    def _create_student(self, user_id=None, email=None):
+        return self.client.post(
+            "/api/v1/students/",
+            data=json.dumps({
+                "fullName": "Abel Girma",
+                "email": email or f"student_{uuid4()}@example.com",
+                "cohortId": self.cohort_id,
+                "joinedAt": "2024-01-01",
+                "userId": str(user_id or uuid4()),    # ← add this
+            }),
+            content_type="application/json",
+            **self.auth,
+        )
     def post(self, request):
         payload = self.authenticate(request)
         forbidden = self.require_roles(payload, "ADMIN")
