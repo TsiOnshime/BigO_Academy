@@ -12,13 +12,10 @@ def get_teacher_payment_repo() -> DjangoTeacherPaymentRepository:
     return DjangoTeacherPaymentRepository()
 
 
+    
 def get_event_publisher():
-    if settings.DEBUG:
-        from adapters.outbound.messaging.kafka_publisher import ConsoleEventPublisher
-        return ConsoleEventPublisher()
-    from adapters.outbound.messaging.kafka_publisher import KafkaEventPublisher
-    return KafkaEventPublisher()
-
+    from adapters.outbound.messaging.kafka_publisher import ConsoleEventPublisher
+    return ConsoleEventPublisher()
 
 # ── Use Case Factories ────────────────────────────────────────────────────
 

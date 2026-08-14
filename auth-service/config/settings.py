@@ -76,6 +76,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -84,7 +85,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -92,6 +92,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
+    "https://bigo-academy.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -194,3 +195,7 @@ GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', default='http://localhost:80
 GITHUB_CLIENT_ID = config('GITHUB_CLIENT_ID', default='your-github-client-id')
 GITHUB_CLIENT_SECRET = config('GITHUB_CLIENT_SECRET', default='your-github-client-secret')
 GITHUB_REDIRECT_URI = config('GITHUB_REDIRECT_URI', default='http://localhost:8000/api/v1/auth/oauth/github/callback/')
+
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
