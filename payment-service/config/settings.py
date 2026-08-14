@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [ 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware', 
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware', 
     'django.middleware.common.CommonMiddleware', 
     'django.middleware.csrf.CsrfViewMiddleware', 
@@ -43,6 +44,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
+    "https://bigo-academy.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
  
@@ -92,9 +94,13 @@ REST_FRAMEWORK = {
  
 KAFKA_BOOTSTRAP_SERVERS = config('KAFKA_BOOTSTRAP_SERVERS', 
 default='localhost:9092') 
- 
+
 JWT_SECRET_KEY = config(
     'JWT_SECRET_KEY',
     default='django-insecure-^s0)!65!%2sgjnpdp%_v__!)353^s^sscl=mi(!tjfge_scf!9',
 )
 JWT_ALGORITHM = config('JWT_ALGORITHM', default='HS256') 
+
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

@@ -31,3 +31,4 @@ sqlparse==0.5.5
 types-psycopg2==2.9.21.20260724
 uritemplate==4.2.0
 urllib3==2.7.0
+whitenoise==6.12.0
