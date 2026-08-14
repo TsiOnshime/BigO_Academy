@@ -17,5 +17,7 @@ class GetStudentUseCase:
     def execute(self, command: GetStudentCommand) -> Student:
         student = self.student_repository.find_by_id(command.student_id)
         if student is None:
+            student = self.student_repository.find_by_user_id(command.student_id)
+        if student is None:
             raise StudentNotFoundError(str(command.student_id))
         return student

@@ -1,5 +1,7 @@
 import uuid
 
+from typing import TYPE_CHECKING
+
 from django.db import models
 
 from core.models.choices import AttendanceStatusChoices
@@ -17,6 +19,10 @@ class ClassSession(models.Model):
     excused_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = models.Manager()
+    if TYPE_CHECKING:
+        attendance_records: models.Manager["AttendanceRecord"]
+
     class Meta:
         db_table = "class_session"
 
@@ -32,6 +38,8 @@ class AttendanceRecord(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="attendance_records")
     status = models.CharField(max_length=10, choices=AttendanceStatusChoices.choices)
     note = models.TextField(null=True, blank=True)
+
+    objects = models.Manager()
 
     class Meta:
         db_table = "attendance_record"

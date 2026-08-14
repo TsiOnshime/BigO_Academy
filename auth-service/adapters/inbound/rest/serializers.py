@@ -131,11 +131,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class CreateAccountSerializer(serializers.Serializer):
     """
-    Admin-only: creates an account for a Teacher or Admin. Students only
-    ever arrive via self-registration (/auth/register) — STUDENT is
-    deliberately excluded from the allowed choices here.
-    A temporary password is generated server-side and emailed to the
-    new user (see EmailServicePort.send_temporary_password_email).
+    Admin-only: creates an account for a Student, Teacher, or Admin.
     """
 
     email = serializers.EmailField()
@@ -143,10 +139,10 @@ class CreateAccountSerializer(serializers.Serializer):
         min_length=FULL_NAME_MIN_LENGTH, max_length=FULL_NAME_MAX_LENGTH
     )
     role = serializers.ChoiceField(
-        choices=[
-            (r.value, r.name) for r in UserRole if r != UserRole.STUDENT
-        ]
+        choices=[(r.value, r.name) for r in UserRole]
     )
+    password = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.CharField(required=False, allow_blank=True)
 
 
 # ---------------------------------------------------------------------
@@ -212,6 +208,7 @@ class AccountResponseSerializer(serializers.Serializer):
     role = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     mustChangePassword = serializers.BooleanField(source="must_change_password")
+    temporaryPassword = serializers.CharField(source="temporary_password", required=False, allow_null=True, default=None)
     oauthProviders = serializers.SerializerMethodField()
     createdAt = serializers.DateTimeField(source="created_at")
     updatedAt = serializers.DateTimeField(source="updated_at")

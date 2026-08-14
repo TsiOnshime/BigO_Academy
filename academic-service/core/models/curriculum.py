@@ -26,6 +26,8 @@ class Topic(models.Model):
     problem_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = "topic"
         ordering = ["display_order"]
@@ -42,6 +44,8 @@ class Problem(models.Model):
     external_url = models.URLField()
     difficulty = models.CharField(max_length=10, choices=ProblemDifficultyChoices.choices)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = models.Manager()
 
     class Meta:
         db_table = "problem"

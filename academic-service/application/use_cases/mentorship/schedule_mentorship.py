@@ -34,16 +34,20 @@ class ScheduleMentorshipUseCase:
         # Both teacher and student must exist
         teacher = self.teacher_repository.find_by_id(command.teacher_id)
         if teacher is None:
+            teacher = self.teacher_repository.find_by_user_id(command.teacher_id)
+        if teacher is None:
             raise TeacherNotFoundError(str(command.teacher_id))
 
         student = self.student_repository.find_by_id(command.student_id)
+        if student is None:
+            student = self.student_repository.find_by_user_id(command.student_id)
         if student is None:
             raise StudentNotFoundError(str(command.student_id))
 
         new_session = MentorshipSession(
             id=uuid4(),
-            teacher_id=command.teacher_id,
-            student_id=command.student_id,
+            teacher_id=teacher.id,
+            student_id=student.id,
             scheduled_at=command.scheduled_at,
             status=MentorshipSessionStatus.SCHEDULED,
             notes=None,

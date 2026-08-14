@@ -43,17 +43,23 @@ class GetStudentAttendanceUseCase:
 
         student = self.student_repository.find_by_id(command.student_id)
         if student is None:
+            student = self.student_repository.find_by_user_id(command.student_id)
+        if student is None:
             raise StudentNotFoundError(str(command.student_id))
 
         history = self.attendance_repository.find_student_attendance(
-            student_id=command.student_id,
+            student_id=student.id,
             from_date=command.from_date,
             to_date=command.to_date,
         )
 
-        percentage = self.attendance_repository.calculate_attendance_percentage(
-            command.student_id
-        )
+        total_records = len(history)
+        if total_records == 0:
+            percentage = 100.0
+        else:
+            percentage = self.attendance_repository.calculate_attendance_percentage(
+                student.id
+            )
 
         present = sum(1 for r in history if r.status.value == "PRESENT")
         absent = sum(1 for r in history if r.status.value == "ABSENT")

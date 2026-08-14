@@ -43,6 +43,7 @@ from .contest_views import (
     ContestListCreateView,
     ContestResultsView,
     GetContestView,
+    GlobalContestListCreateView,
 )
 from .mentorship_views import (
     MentorshipSessionDetailView,

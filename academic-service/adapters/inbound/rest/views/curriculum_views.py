@@ -38,6 +38,7 @@ from domain.enums import YearPhase
 from infrastructure.config.dependencies import (
     get_add_problem_use_case,
     get_create_topic_use_case,
+    get_curriculum_repository,
     get_delete_problem_use_case,
     get_delete_topic_use_case,
     get_get_topic_use_case,
@@ -50,6 +51,7 @@ from infrastructure.config.dependencies import (
 from ..serializers import (
     CreateProblemSerializer,
     CreateTopicSerializer,
+    ProblemListResponseSerializer,
     ProblemResponseSerializer,
     ReorderTopicsSerializer,
     TopicListResponseSerializer,
@@ -64,7 +66,7 @@ class TopicListCreateView(BaseAcademicView):
 
     def post(self, request, cohort_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
         if forbidden:
             return forbidden
 
@@ -132,7 +134,7 @@ class TopicDetailView(BaseAcademicView):
 
     def patch(self, request, topic_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
         if forbidden:
             return forbidden
 
@@ -157,7 +159,7 @@ class TopicDetailView(BaseAcademicView):
 
     def delete(self, request, topic_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
         if forbidden:
             return forbidden
 
@@ -193,9 +195,17 @@ class ReorderTopicsView(BaseAcademicView):
 
 
 class AddProblemView(BaseAcademicView):
+    def get(self, request, topic_id):
+        payload = self.authenticate(request)
+        if not payload:
+            return Response({"detail": "Authentication credentials were not provided."}, status=401)
+        repo = get_curriculum_repository()
+        problems = repo.find_problems_by_topic(topic_id)
+        return Response(ProblemListResponseSerializer({"problems": problems}).data)
+
     def post(self, request, topic_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
         if forbidden:
             return forbidden
 
@@ -226,7 +236,7 @@ class ProblemDetailView(BaseAcademicView):
 
     def patch(self, request, problem_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
         if forbidden:
             return forbidden
 
@@ -251,7 +261,7 @@ class ProblemDetailView(BaseAcademicView):
 
     def delete(self, request, problem_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
         if forbidden:
             return forbidden
 

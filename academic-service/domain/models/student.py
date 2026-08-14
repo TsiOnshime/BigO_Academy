@@ -18,6 +18,7 @@ class Student:
     attendance_percentage: float
     active_warning_count: int
     joined_at: date
+    codeforces_handle: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     

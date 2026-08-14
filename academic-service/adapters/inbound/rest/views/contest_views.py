@@ -99,6 +99,79 @@ class ContestListCreateView(BaseAcademicView):
         return Response(ContestListResponseSerializer({"contests": contests}).data)
 
 
+class GlobalContestListCreateView(BaseAcademicView):
+    def get(self, request):
+        payload = self.authenticate(request)
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER", "STUDENT")
+        if forbidden:
+            return forbidden
+
+        status_param = request.query_params.get("status")
+        cohort_id_param = request.query_params.get("cohortId")
+        if cohort_id_param:
+            try:
+                use_case = get_list_contests_use_case()
+                contests = use_case.execute(
+                    ListContestsCommand(
+                        cohort_id=UUID(cohort_id_param),
+                        status=ContestStatus(status_param) if status_param else None,
+                    )
+                )
+                return Response(ContestListResponseSerializer({"contests": contests}).data)
+            except Exception as exc:
+                return self.handle_domain_exception(exc)
+
+        from infrastructure.config.dependencies import get_cohort_repository
+        from core.models import Contest as ContestORM
+        queryset = ContestORM.objects.all().order_by("-scheduled_at")
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        from adapters.outbound.persistence.contest_repo import DjangoContestRepository
+        repo = DjangoContestRepository()
+        contests = [repo._contest_to_domain(c) for c in queryset]
+        return Response(ContestListResponseSerializer({"contests": contests}).data)
+
+    def post(self, request):
+        payload = self.authenticate(request)
+        forbidden = self.require_roles(payload, "ADMIN", "TEACHER")
+        if forbidden:
+            return forbidden
+
+        serializer = CreateContestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        cohort_id = data.get("cohort_id")
+        if not cohort_id:
+            from infrastructure.config.dependencies import get_cohort_repository
+            cohorts = get_cohort_repository().find_all()
+            cohort_id = cohorts[0].id if cohorts else None
+
+        if not cohort_id:
+            return Response(
+                {"message": "No cohort available to attach contest to."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            use_case = get_create_contest_use_case()
+            contest = use_case.execute(
+                CreateContestCommand(
+                    title=data["title"],
+                    cohort_id=cohort_id,
+                    external_contest_url=data["external_contest_url"],
+                    scheduled_at=data["scheduled_at"],
+                    problem_count=data.get("problem_count", 0),
+                )
+            )
+        except Exception as exc:
+            return self.handle_domain_exception(exc)
+
+        return Response(
+            ContestResponseSerializer(contest).data, status=status.HTTP_201_CREATED
+        )
+
+
 class GetContestView(BaseAcademicView):
     def get(self, request, contest_id):
         payload = self.authenticate(request)

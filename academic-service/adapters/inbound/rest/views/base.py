@@ -120,7 +120,8 @@ class BaseAcademicView(APIView):
     def authenticate(self, request) -> dict:
         """Returns the decoded JWT payload (dict with userId/email/role),
         or raises UnauthorizedAccessError."""
-        return validate_token(request.META.get("HTTP_AUTHORIZATION", ""))
+        auth_header = request.headers.get("Authorization") or request.META.get("HTTP_AUTHORIZATION", "")
+        return validate_token(auth_header)
 
     @staticmethod
     def require_roles(payload: dict, *allowed_roles: str) -> Response | None:

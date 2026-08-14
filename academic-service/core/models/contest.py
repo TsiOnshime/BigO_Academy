@@ -1,4 +1,5 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from django.db import models
 
@@ -22,6 +23,10 @@ class Contest(models.Model):
     problem_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = models.Manager()
+    if TYPE_CHECKING:
+        results: models.Manager["ContestResult"]
+
     class Meta:
         db_table = "contest"
 
@@ -39,6 +44,8 @@ class ContestResult(models.Model):
     contest_rank = models.IntegerField()
     problems_solved = models.IntegerField(default=0)
     participated = models.BooleanField(default=True)
+
+    objects = models.Manager()
 
     class Meta:
         db_table = "contest_result"

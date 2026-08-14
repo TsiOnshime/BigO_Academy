@@ -31,7 +31,7 @@ class DjangoCurriculumRepository(CurriculumRepositoryPort):
                 "cohort_id": topic.curriculum_id,
                 "title": topic.title,
                 "description": topic.description,
-                "year_phase": topic.year_phase.value,
+                "year_phase": topic.year_phase.value if hasattr(topic.year_phase, "value") else int(topic.year_phase),
                 "display_order": topic.display_order,
                 "problem_count": topic.problem_count,
             },
@@ -50,7 +50,8 @@ class DjangoCurriculumRepository(CurriculumRepositoryPort):
     ) -> list[Topic]:
         queryset = TopicORM.objects.filter(cohort_id=cohort_id)
         if year_phase is not None:
-            queryset = queryset.filter(year_phase=year_phase.value)
+            yp_val = year_phase.value if hasattr(year_phase, "value") else int(year_phase)
+            queryset = queryset.filter(year_phase=yp_val)
         queryset = queryset.order_by("display_order")
         return [self._topic_to_domain(orm) for orm in queryset]
 
@@ -67,14 +68,16 @@ class DjangoCurriculumRepository(CurriculumRepositoryPort):
     def save_problem(self, problem: Problem) -> Problem:
         with transaction.atomic():
             is_new = not ProblemORM.objects.filter(id=problem.id).exists()
+            source_val = problem.source.value if hasattr(problem.source, "value") else str(problem.source)
+            diff_val = problem.difficulty.value if hasattr(problem.difficulty, "value") else str(problem.difficulty)
             orm, _ = ProblemORM.objects.update_or_create(
                 id=problem.id,
                 defaults={
                     "topic_id": problem.topic_id,
                     "title": problem.title,
-                    "source": problem.source.value,
+                    "source": source_val,
                     "external_url": problem.external_url,
-                    "difficulty": problem.difficulty.value,
+                    "difficulty": diff_val,
                 },
             )
             if is_new:
@@ -82,6 +85,7 @@ class DjangoCurriculumRepository(CurriculumRepositoryPort):
                     problem_count=F("problem_count") + 1
                 )
         return self._problem_to_domain(orm)
+
 
     def find_problem_by_id(self, problem_id: UUID) -> Optional[Problem]:
         try:

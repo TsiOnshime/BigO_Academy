@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from domain.models import User
 from domain.enums import UserRole, AccountStatus, OAuthProvider
-from domain.exceptions import AccountInactiveError
+from domain.exceptions import AccountInactiveError, UserNotFoundError
 
 from application.ports.outbound.user_repository import UserRepositoryPort
 from application.ports.outbound.token_service import TokenServicePort
@@ -35,27 +35,18 @@ class OAuthLoginUseCase:
         profile: OAuthUserProfile = self.oauth_provider.get_user_profile(command.authorization_code)
 
         existing_user = self.user_repository.find_by_email(profile.email)
-        is_new_user = existing_user is None
         
-        if existing_user is not None:
-            if not existing_user.is_active():
-                raise AccountInactiveError()
-            if not existing_user.has_oauth_provider(command.provider):
-                existing_user.oauth_providers.append(command.provider)
-                self.user_repository.save(existing_user)
-            user = existing_user
-        else:
-            user = User(
-                id=uuid4(),
-                email=profile.email,
-                full_name=profile.full_name,
-                role=UserRole.STUDENT,
-                status=AccountStatus.ACTIVE,
-                hashed_password=None,
-                oauth_providers=[command.provider],
-                must_change_password=False,
-            )
-            user = self.user_repository.save(user)
+        if existing_user is None:
+            raise UserNotFoundError(f"No BigO Academy account exists for {profile.email}. Registration is restricted to administrator-enrolled students and teachers.")
+
+        if not existing_user.is_active():
+            raise AccountInactiveError()
+
+        if not existing_user.has_oauth_provider(command.provider):
+            existing_user.oauth_providers.append(command.provider)
+            self.user_repository.save(existing_user)
+
+        user = existing_user
         token_pair = self.token_service.generate_tokens(user)
         
         return OAuthLoginResult(
@@ -64,6 +55,6 @@ class OAuthLoginUseCase:
             token_type=token_pair.token_type,
             expires_in=token_pair.expires_in,
             user=user,
-            is_new_user=is_new_user
+            is_new_user=False
         )           
                 

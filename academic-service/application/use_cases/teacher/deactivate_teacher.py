@@ -27,6 +27,8 @@ class DeactivateTeacherUseCase:
 
         teacher = self.teacher_repository.find_by_id(command.teacher_id)
         if teacher is None:
+            teacher = self.teacher_repository.find_by_user_id(command.teacher_id)
+        if teacher is None:
             raise TeacherNotFoundError(str(command.teacher_id))
 
         teacher.status = TeacherStatus.INACTIVE

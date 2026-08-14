@@ -45,7 +45,7 @@ from infrastructure.config.dependencies import (
     get_update_mentorship_session_use_case,
 )
 
-from ..serializers import (
+from adapters.inbound.rest.serializers import (
     CreateMentorshipSessionSerializer,
     MentorshipSessionListResponseSerializer,
     MentorshipSessionResponseSerializer,
@@ -107,24 +107,46 @@ class MentorshipSessionListCreateView(BaseAcademicView):
         teacher_id_param = request.query_params.get("teacherId")
 
         try:
+            student_id = None
+            if student_id_param:
+                from infrastructure.config.dependencies import get_student_repository
+                st = get_student_repository().find_by_id(UUID(student_id_param))
+                if st is None:
+                    st = get_student_repository().find_by_user_id(UUID(student_id_param))
+                student_id = st.id if st else UUID(student_id_param)
+
+            teacher_id = None
+            if teacher_id_param:
+                from infrastructure.config.dependencies import get_teacher_repository
+                tc = get_teacher_repository().find_by_id(UUID(teacher_id_param))
+                if tc is None:
+                    tc = get_teacher_repository().find_by_user_id(UUID(teacher_id_param))
+                teacher_id = tc.id if tc else UUID(teacher_id_param)
+
             use_case = get_list_mentorship_sessions_use_case()
             sessions = use_case.execute(
                 ListMentorshipSessionsCommand(
-                    student_id=UUID(student_id_param) if student_id_param else None,
-                    teacher_id=UUID(teacher_id_param) if teacher_id_param else None,
+                    student_id=student_id,
+                    teacher_id=teacher_id,
                 )
             )
 
             teacher_names = {}
             student_names = {}
             for tid in {s.teacher_id for s in sessions}:
-                teacher_names[tid] = get_get_teacher_use_case().execute(
-                    GetTeacherCommand(teacher_id=tid)
-                ).full_name
+                try:
+                    teacher_names[tid] = get_get_teacher_use_case().execute(
+                        GetTeacherCommand(teacher_id=tid)
+                    ).full_name
+                except Exception:
+                    teacher_names[tid] = "Teacher"
             for sid in {s.student_id for s in sessions}:
-                student_names[sid] = get_get_student_use_case().execute(
-                    GetStudentCommand(student_id=sid)
-                ).full_name
+                try:
+                    student_names[sid] = get_get_student_use_case().execute(
+                        GetStudentCommand(student_id=sid)
+                    ).full_name
+                except Exception:
+                    student_names[sid] = "Student"
         except Exception as exc:
             return self.handle_domain_exception(exc)
 

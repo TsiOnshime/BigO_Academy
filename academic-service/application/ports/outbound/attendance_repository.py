@@ -3,7 +3,7 @@ from datetime import date
 from uuid import UUID
 from typing import Optional
 
-from domain.models import ClassSession
+from domain.models import AttendanceRecord, ClassSession
 
 
 class AttendanceRepositoryPort(ABC):
@@ -25,8 +25,8 @@ class AttendanceRepositoryPort(ABC):
     @abstractmethod
     def find_student_attendance(
         self, student_id: UUID, from_date: Optional[date] = None, to_date: Optional[date] = None
-    ) -> list[ClassSession]:
-        """list the sessions (and this student's record within them) for a student"""
+    ) -> list[AttendanceRecord]:
+        """list attendance records for a student, optionally bounded by a date range"""
 
     @abstractmethod
     def calculate_attendance_percentage(self, student_id: UUID) -> float:

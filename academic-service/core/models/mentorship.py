@@ -20,6 +20,8 @@ class MentorshipSession(models.Model):
     notes = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = "mentorship_session"
 

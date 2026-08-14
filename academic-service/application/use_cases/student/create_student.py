@@ -10,6 +10,8 @@ from application.ports.outbound.student_repository import StudentRepositoryPort
 from application.ports.outbound.event_publisher import EventPublisherPort
 from application.ports.outbound.cohort_repository import CohortRepositoryPort
 
+from typing import Optional
+
 @dataclass
 class CreateStudentCommand:
     user_id: UUID
@@ -17,6 +19,7 @@ class CreateStudentCommand:
     email: str
     cohort_id: UUID
     joined_at: date
+    codeforces_handle: Optional[str] = None
 
 @dataclass
 class CreateStudentResult:
@@ -47,9 +50,10 @@ class CreateStudentUseCase:
             year_phase=YearPhase.YEAR_ONE,
             status=StudentStatus.ACTIVE,
             assigned_teacher_id=None,
-            attendance_percentage=0.0,
+            attendance_percentage=100.0,
             active_warning_count=0,
             joined_at=command.joined_at,
+            codeforces_handle=command.codeforces_handle.strip() if command.codeforces_handle else None,
         )
         
         saved_student = self.student_repository.save(new_student)
