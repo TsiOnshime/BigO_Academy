@@ -47,6 +47,12 @@ class DjangoContestRepository(ContestRepositoryPort):
             queryset = queryset.filter(status=status.value)
         return [self._contest_to_domain(orm) for orm in queryset]
 
+    def find_all(self, status: Optional[ContestStatus] = None) -> list[Contest]:
+        queryset = ContestORM.objects.all()
+        if status is not None:
+            queryset = queryset.filter(status=status.value)
+        return [self._contest_to_domain(orm) for orm in queryset]
+
     @transaction.atomic
     def save_results(self, contest_id: UUID, results: list[ContestResult]) -> None:
         ContestResultORM.objects.bulk_create(

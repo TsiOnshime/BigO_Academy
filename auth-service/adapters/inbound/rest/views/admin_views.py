@@ -45,11 +45,18 @@ class CreateAccountView(BaseAuthView):
 
         try:
             use_case = get_create_account_use_case()
+            from domain.enums import AccountStatus
+            status_val = AccountStatus(data["status"]) if data.get("status") else None
             result = use_case.execute(
                 CreateAccountCommand(
-                    full_name=data["fullName"], email=data["email"], role=data["role"]
+                    full_name=data["fullName"],
+                    email=data["email"],
+                    role=data["role"],
+                    password=data.get("password") or None,
+                    status=status_val,
                 )
             )
+            setattr(result.user, "temporary_password", result.temporary_password)
         except Exception as exc:
             return self.handle_domain_exception(exc)
 

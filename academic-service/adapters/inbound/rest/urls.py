@@ -31,6 +31,7 @@ from .views import (
     GetStudentAttendanceView,
     GetStudentProgressView,
     GetStudentWarningsView,
+    GlobalContestListCreateView,
     GraduateStudentView,
     ListEscalatedWarningsView,
     MentorshipSessionDetailView,
@@ -179,6 +180,7 @@ urlpatterns = [
     ),
 
     # ── Contests ──────────────────────────────────────────────────────
+    path("contests/", GlobalContestListCreateView.as_view(), name="global-contests-list-create"),
     path(
         "cohorts/<uuid:cohort_id>/contests/",
         ContestListCreateView.as_view(),

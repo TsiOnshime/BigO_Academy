@@ -32,6 +32,7 @@ class DjangoStudentRepository(StudentRepositoryPort):
                 "assigned_teacher_id": student.assigned_teacher_id,
                 "attendance_percentage": student.attendance_percentage,
                 "active_warning_count": student.active_warning_count,
+                "codeforces_handle": student.codeforces_handle,
                 "joined_at": student.joined_at,
             },
         )
@@ -78,6 +79,7 @@ class DjangoStudentRepository(StudentRepositoryPort):
             assigned_teacher_id=orm.assigned_teacher_id,
             attendance_percentage=orm.attendance_percentage,
             active_warning_count=orm.active_warning_count,
+            codeforces_handle=orm.codeforces_handle,
             joined_at=orm.joined_at,
             created_at=orm.created_at,
             updated_at=orm.updated_at,

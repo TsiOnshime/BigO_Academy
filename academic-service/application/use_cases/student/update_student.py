@@ -12,6 +12,7 @@ class UpdateStudentCommand:
     student_id: UUID
     full_name: Optional[str] = None
     email: Optional[str] = None
+    codeforces_handle: Optional[str] = None
 
 class UpdateStudentUseCase:
     def __init__(self, student_repository: StudentRepositoryPort):
@@ -19,6 +20,8 @@ class UpdateStudentUseCase:
         
     def execute(self, command: UpdateStudentCommand) -> Student:
         student = self.student_repository.find_by_id(command.student_id)
+        if student is None:
+            student = self.student_repository.find_by_user_id(command.student_id)
         
         if student is None:
             raise StudentNotFoundError(str(command.student_id))
@@ -26,6 +29,8 @@ class UpdateStudentUseCase:
             student.full_name = command.full_name
         if command.email is not None:
             student.email = command.email
+        if command.codeforces_handle is not None:
+            student.codeforces_handle = command.codeforces_handle.strip() or None
         
         return self.student_repository.save(student)
         

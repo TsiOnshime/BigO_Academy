@@ -26,6 +26,8 @@ class Cohort(models.Model):
     teachers = models.ManyToManyField(Teacher, blank=True, related_name="cohorts")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = "cohort"
 

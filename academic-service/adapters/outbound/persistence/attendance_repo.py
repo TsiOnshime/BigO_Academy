@@ -91,7 +91,7 @@ class DjangoAttendanceRepository(AttendanceRepositoryPort):
     def calculate_attendance_percentage(self, student_id: UUID) -> float:
         total = AttendanceRecordORM.objects.filter(student_id=student_id).count()
         if total == 0:
-            return 0.0
+            return 100.0
         present = AttendanceRecordORM.objects.filter(
             student_id=student_id, status=AttendanceStatus.PRESENT.value
         ).count()

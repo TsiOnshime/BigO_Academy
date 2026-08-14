@@ -42,6 +42,7 @@ from infrastructure.config.dependencies import (
     get_graduate_student_use_case,
     get_list_students_use_case,
     get_promote_student_use_case,
+    get_student_repository,
     get_update_student_status_use_case,
     get_update_student_use_case,
 )
@@ -56,9 +57,59 @@ from ..serializers import (
 from .base import BaseAcademicView
 
 
-def _student_to_dict(student, cohort_name=None) -> dict:
+from infrastructure.codeforces_client import CodeforcesClient
+
+def _student_to_dict(
+    student,
+    cohort_name=None,
+    solved_count=None,
+    total_problems=None,
+    cf_data=None,
+) -> dict:
     data = asdict(student)
     data["cohort_name"] = cohort_name
+    if solved_count is None:
+        try:
+            from core.models import ProblemProgress
+            solved_count = ProblemProgress.objects.filter(student_id=student.id, solved=True).count()
+        except Exception:
+            solved_count = 0
+    data["solved_count"] = solved_count
+
+    if total_problems is None:
+        try:
+            from core.models import Problem
+            if student.cohort_id:
+                total_problems = Problem.objects.filter(topic__cohort_id=student.cohort_id).count()
+            else:
+                total_problems = Problem.objects.count()
+        except Exception:
+            total_problems = 0
+    data["total_problems"] = total_problems
+
+    # Resolve Codeforces Info
+    if cf_data is None and student.codeforces_handle:
+        try:
+            cf_data = CodeforcesClient.get_user_info(student.codeforces_handle)
+        except Exception:
+            cf_data = None
+
+    if cf_data:
+        data["codeforces_rating"] = cf_data.get("rating", 0)
+        data["codeforces_rank"] = cf_data.get("rank", "unrated")
+        data["codeforces_max_rating"] = cf_data.get("maxRating", 0)
+    else:
+        data["codeforces_rating"] = 0
+        data["codeforces_rank"] = "unrated"
+        data["codeforces_max_rating"] = 0
+
+    try:
+        from core.models import AttendanceRecord as AttendanceRecordORM
+        if AttendanceRecordORM.objects.filter(student_id=student.id).count() == 0:
+            data["attendance_percentage"] = 100.0
+    except Exception:
+        pass
+
     return data
 
 
@@ -89,6 +140,7 @@ class StudentListCreateView(BaseAcademicView):
                     full_name=data["full_name"],
                     email=data["email"],
                     cohort_id=data["cohort_id"],
+                    codeforces_handle=data.get("codeforces_handle"),
                     # CreateStudentCommand.joined_at has no default —
                     # default to today when the caller omits it.
                     joined_at=data.get("joined_at") or date.today(),
@@ -129,9 +181,18 @@ class StudentListCreateView(BaseAcademicView):
         for cid in {s.cohort_id for s in students if s.cohort_id is not None}:
             cohort_names[cid] = _cohort_name_for(cid)
 
+        # Batch Codeforces lookups for all handles in the student list
+        handles = [s.codeforces_handle for s in students if s.codeforces_handle]
+        cf_batch = CodeforcesClient.get_users_info(handles) if handles else {}
+
         body = {
             "students": [
-                _student_to_dict(s, cohort_names.get(s.cohort_id)) for s in students
+                _student_to_dict(
+                    s,
+                    cohort_names.get(s.cohort_id) if s.cohort_id is not None else None,
+                    cf_data=cf_batch.get((s.codeforces_handle or "").lower()) if s.codeforces_handle else None,
+                )
+                for s in students
             ]
         }
         return Response(StudentListResponseSerializer(body).data)
@@ -149,28 +210,89 @@ class StudentDetailView(BaseAcademicView):
             use_case = get_get_student_use_case()
             student = use_case.execute(GetStudentCommand(student_id=student_id))
         except Exception as exc:
-            return self.handle_domain_exception(exc)
+            repo = get_student_repository()
+            student = repo.find_by_user_id(student_id)
+            user_sub = str(payload.get("user_id") or payload.get("sub") or "")
+            if not student and payload.get("role") == "STUDENT" and str(student_id) == user_sub:
+                from domain.models import Student as DomainStudent
+                from domain.enums import StudentStatus, YearPhase
+                from datetime import date
+                cohort_repo = get_cohort_repository()
+                cohorts = cohort_repo.find_all()
+                cohort = cohorts[0] if cohorts else None
+                email = payload.get("email", "student@example.com")
+                full_name = email.split("@")[0].replace(".", " ").title()
+                new_student = DomainStudent(
+                    id=student_id,
+                    user_id=student_id,
+                    full_name=full_name,
+                    email=email,
+                    cohort_id=cohort.id if cohort else None,
+                    year_phase=YearPhase.YEAR_ONE,
+                    status=StudentStatus.ACTIVE,
+                    assigned_teacher_id=None,
+                    attendance_percentage=100.0,
+                    active_warning_count=0,
+                    joined_at=date.today(),
+                )
+                student = repo.save(new_student)
+            elif not student:
+                return self.handle_domain_exception(exc)
 
         body = _student_to_dict(student, _cohort_name_for(student.cohort_id))
         return Response(StudentResponseSerializer(body).data)
 
     def patch(self, request, student_id):
         payload = self.authenticate(request)
-        forbidden = self.require_roles(payload, "ADMIN")
-        if forbidden:
-            return forbidden
+        user_role = payload.get("role")
+        user_sub = str(payload.get("user_id") or payload.get("sub") or "")
+        is_admin = user_role == "ADMIN"
+        is_self_student = user_role == "STUDENT" and str(student_id) == user_sub
+
+        if not (is_admin or is_self_student):
+            forbidden = self.require_roles(payload, "ADMIN")
+            if forbidden:
+                return forbidden
 
         serializer = UpdateStudentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+
+        # Ensure student record exists if self-student
+        repo = get_student_repository()
+        existing = repo.find_by_id(student_id) or repo.find_by_user_id(student_id)
+        if not existing and is_self_student:
+            from domain.models import Student as DomainStudent
+            from domain.enums import StudentStatus, YearPhase
+            from datetime import date
+            cohort_repo = get_cohort_repository()
+            cohorts = cohort_repo.find_all()
+            cohort = cohorts[0] if cohorts else None
+            email = payload.get("email", "student@example.com")
+            full_name = email.split("@")[0].replace(".", " ").title()
+            new_student = DomainStudent(
+                id=student_id,
+                user_id=student_id,
+                full_name=full_name,
+                email=email,
+                cohort_id=cohort.id if cohort else None,
+                year_phase=YearPhase.YEAR_ONE,
+                status=StudentStatus.ACTIVE,
+                assigned_teacher_id=None,
+                attendance_percentage=100.0,
+                active_warning_count=0,
+                joined_at=date.today(),
+            )
+            repo.save(new_student)
 
         try:
             use_case = get_update_student_use_case()
             student = use_case.execute(
                 UpdateStudentCommand(
                     student_id=student_id,
-                    full_name=data.get("full_name"),
-                    email=data.get("email"),
+                    full_name=data.get("full_name") if (is_admin or is_self_student) else None,
+                    email=data.get("email") if is_admin else None,
+                    codeforces_handle=data.get("codeforces_handle"),
                 )
             )
         except Exception as exc:

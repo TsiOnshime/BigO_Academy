@@ -21,6 +21,12 @@ class StudentResponseSerializer(serializers.Serializer):
     # view-supplied: not on domain.Student — the view looks up the cohort
     # (if any) and adds `cohort_name` before serializing.
     cohortName = serializers.CharField(source="cohort_name", allow_null=True, required=False)
+    codeforcesHandle = serializers.CharField(source="codeforces_handle", allow_null=True, required=False)
+    codeforcesRating = serializers.IntegerField(source="codeforces_rating", allow_null=True, required=False, default=0)
+    codeforcesRank = serializers.CharField(source="codeforces_rank", allow_null=True, required=False, default="unrated")
+    codeforcesMaxRating = serializers.IntegerField(source="codeforces_max_rating", allow_null=True, required=False, default=0)
+    solvedCount = serializers.IntegerField(source="solved_count", required=False, default=0)
+    totalProblems = serializers.IntegerField(source="total_problems", required=False, default=0)
     assignedTeacherId = serializers.UUIDField(source="assigned_teacher_id", allow_null=True)
     attendancePercentage = serializers.FloatField(source="attendance_percentage")
     activeWarningCount = serializers.IntegerField(source="active_warning_count")
@@ -39,11 +45,13 @@ class CreateStudentSerializer(serializers.Serializer):
     fullName = serializers.CharField(source="full_name")
     email = serializers.EmailField()
     cohortId = serializers.UUIDField(source="cohort_id")
+    codeforcesHandle = serializers.CharField(source="codeforces_handle", required=False, allow_blank=True, allow_null=True)
     joinedAt = serializers.DateField(source="joined_at", required=False)
 
 class UpdateStudentSerializer(serializers.Serializer):
     fullName = serializers.CharField(source="full_name", required=False)
     email = serializers.EmailField(required=False)
+    codeforcesHandle = serializers.CharField(source="codeforces_handle", required=False, allow_blank=True, allow_null=True)
 
 
 class UpdateStudentStatusSerializer(serializers.Serializer):

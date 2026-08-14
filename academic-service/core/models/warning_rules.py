@@ -12,6 +12,8 @@ class WarningRulesConfig(models.Model):
     max_warnings_before_escalation = models.IntegerField(default=3)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = "warning_rules_config"
 

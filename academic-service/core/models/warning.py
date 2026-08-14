@@ -21,6 +21,8 @@ class Warning(models.Model):
     dismissed_by = models.UUIDField(null=True, blank=True)
     dismissal_note = models.TextField(null=True, blank=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = "warning"
 

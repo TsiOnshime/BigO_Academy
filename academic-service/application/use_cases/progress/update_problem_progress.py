@@ -40,7 +40,11 @@ class UpdateProblemProgressUseCase:
         # Student must exist
         student = self.student_repository.find_by_id(command.student_id)
         if student is None:
+            student = self.student_repository.find_by_user_id(command.student_id)
+        if student is None:
             raise StudentNotFoundError(str(command.student_id))
+
+        student_id = student.id
 
         # Problem must exist
         problem = self.curriculum_repository.find_problem_by_id(command.problem_id)
@@ -49,7 +53,7 @@ class UpdateProblemProgressUseCase:
 
         # Fetch existing progress or create new
         existing = self.progress_repository.find_by_student_and_problem(
-            command.student_id,
+            student_id,
             command.problem_id,
         )
 
@@ -61,7 +65,7 @@ class UpdateProblemProgressUseCase:
         else:
             progress = ProblemProgress(
                 id=uuid4(),
-                student_id=command.student_id,
+                student_id=student_id,
                 problem_id=command.problem_id,
                 solved=False,
                 attempt_count=0,

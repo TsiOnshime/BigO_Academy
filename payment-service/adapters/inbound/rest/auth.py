@@ -15,7 +15,7 @@ class JWTAuthMixin:
         Validates the JWT and returns the payload.
         Returns None if token is missing or invalid.
         """
-        auth_header = request.headers.get("Authorization", "")
+        auth_header = request.headers.get("Authorization", "") or request.META.get("HTTP_AUTHORIZATION", "")
         if not auth_header.startswith("Bearer "):
             return None
 
@@ -26,6 +26,11 @@ class JWTAuthMixin:
                 settings.JWT_SECRET_KEY,
                 algorithms=[settings.JWT_ALGORITHM],
             )
+            # Normalize user_id / userId / sub
+            user_id = payload.get("user_id") or payload.get("userId") or payload.get("sub")
+            if user_id:
+                payload["userId"] = str(user_id)
+                payload["user_id"] = str(user_id)
             return payload
         except jwt.ExpiredSignatureError:
             return None
@@ -82,7 +87,8 @@ class JWTAuthMixin:
             return user
         if user.get("role") == "ADMIN":
             return user
-        if str(user.get("userId")) == str(target_id):
+        user_id = user.get("userId") or user.get("user_id") or user.get("sub")
+        if user_id and str(user_id).lower() == str(target_id).lower():
             return user
         return Response(
             {

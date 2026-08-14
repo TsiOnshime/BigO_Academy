@@ -38,10 +38,14 @@ class GetStudentProgressUseCase:
         # Student must exist
         student = self.student_repository.find_by_id(command.student_id)
         if student is None:
+            student = self.student_repository.find_by_user_id(command.student_id)
+        if student is None:
             raise StudentNotFoundError(str(command.student_id))
 
+        student_id = student.id
+
         progress = self.progress_repository.find_all_by_student(
-            student_id=command.student_id,
+            student_id=student_id,
             topic_id=command.topic_id,
         )
 

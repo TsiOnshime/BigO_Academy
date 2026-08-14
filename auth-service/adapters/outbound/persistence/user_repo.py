@@ -27,15 +27,22 @@ class UserRepository(UserRepositoryPort):
         )
 
     def _map_to_orm(self, user: User) -> DjangoUser:
-        orm_user, _ = DjangoUser.objects.get_or_create(id=user.id)
+        try:
+            orm_user = DjangoUser.objects.get(id=user.id)
+        except DjangoUser.DoesNotExist:
+            orm_user = DjangoUser(id=user.id)
+
+        role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+        status_val = user.status.value if hasattr(user.status, "value") else str(user.status)
 
         orm_user.email = user.email
         orm_user.full_name = user.full_name
-        orm_user.role = user.role.value
-        orm_user.status = user.status.value
+        orm_user.role = role_val
+        orm_user.status = status_val
         orm_user.hashed_password = user.hashed_password
         orm_user.oauth_providers = [
-            provider.value for provider in user.oauth_providers
+            provider.value if hasattr(provider, "value") else str(provider)
+            for provider in user.oauth_providers
         ]
         orm_user.must_change_password = user.must_change_password
 

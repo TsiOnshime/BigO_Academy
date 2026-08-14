@@ -18,10 +18,6 @@ from .views import (
     DeactivateAccountView,
     ForgotPasswordView,
     GetAccountView,
-    GitHubOAuthCallbackView,
-    GitHubOAuthInitiateView,
-    GoogleOAuthCallbackView,
-    GoogleOAuthInitiateView,
     LoginView,
     LogoutView,
     RefreshTokenView,
@@ -65,27 +61,5 @@ urlpatterns = [
         "auth/admin/accounts/<uuid:user_id>/reset-password/",
         AdminResetPasswordView.as_view(),
         name="admin-reset-password",
-    ),
-
-    # -- OAuth (from the OpenAPI spec, not in the 14-path table above) --
-    path(
-        "auth/oauth/google/",
-        GoogleOAuthInitiateView.as_view(),
-        name="google-oauth-initiate",
-    ),
-    path(
-        "auth/oauth/google/callback/",
-        GoogleOAuthCallbackView.as_view(),
-        name="google-oauth-callback",
-    ),
-    path(
-        "auth/oauth/github/",
-        GitHubOAuthInitiateView.as_view(),
-        name="github-oauth-initiate",
-    ),
-    path(
-        "auth/oauth/github/callback/",
-        GitHubOAuthCallbackView.as_view(),
-        name="github-oauth-callback",
     ),
 ]

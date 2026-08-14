@@ -37,7 +37,7 @@ class ContestListResponseSerializer(serializers.Serializer):
 
 class CreateContestSerializer(serializers.Serializer):
     title = serializers.CharField()
-    cohortId = serializers.UUIDField(source="cohort_id")
+    cohortId = serializers.UUIDField(source="cohort_id", required=False)
     externalContestUrl = serializers.URLField(source="external_contest_url")
     scheduledAt = serializers.DateTimeField(source="scheduled_at")
     problemCount = serializers.IntegerField(source="problem_count", required=False)

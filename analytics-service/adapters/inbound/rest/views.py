@@ -3,6 +3,10 @@ from datetime import datetime
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 from adapters.inbound.rest.auth import JWTAuthMixin
 from adapters.inbound.rest.serializers import (
@@ -145,6 +149,70 @@ class StudentHistoryView(JWTAuthMixin, APIView):
         
 # ── Leaderboard Views ─────────────────────────────────────────────────────
 
+def _sync_leaderboard_from_academic(auth_header: str = "") -> None:
+    if getattr(settings, "TESTING", False):
+        return
+    try:
+        import requests
+        from uuid import UUID
+        from domain.models import LeaderboardEntry
+        from adapters.outbound.persistence.leaderboard_repo import (
+            DjangoLeaderboardRepository,
+        )
+
+        headers = {}
+        if auth_header:
+            headers["Authorization"] = auth_header
+
+        resp = requests.get(
+            "http://localhost:8001/api/v1/students/",
+            headers=headers,
+            timeout=2.5,
+        )
+        if resp.status_code == 200:
+            st_data = resp.json().get("students", [])
+            # Sort by total rating (CF rating bonus + solved count bonus), then solvedCount, then attendance
+            def _calc_sort_key(st):
+                cf_r = int(st.get("codeforcesRating") or 0)
+                sc = int(st.get("solvedCount") or 0)
+                base_r = (cf_r + sc * 10) if cf_r > 0 else (1200 + sc * 25)
+                att = float(st.get("attendancePercentage") or 0.0)
+                return (base_r, sc, att)
+
+            st_data_sorted = sorted(
+                st_data,
+                key=_calc_sort_key,
+                reverse=True,
+            )
+            entries = []
+            for rank_idx, s in enumerate(st_data_sorted, start=1):
+                solved_cnt = int(s.get("solvedCount") or 0)
+                att_pct = float(s.get("attendancePercentage") or 100.0)
+                perf = round(att_pct * 0.4 + 100 * 0.4 + min(solved_cnt, 100) * 0.2, 2)
+                cf_r = int(s.get("codeforcesRating") or 0)
+                rating = (cf_r + solved_cnt * 10) if cf_r > 0 else (1200 + solved_cnt * 25)
+                cid_str = s.get("cohortId")
+                cid = UUID(str(cid_str)) if cid_str else UUID("00000000-0000-0000-0000-000000000000")
+
+                entries.append(
+                    LeaderboardEntry(
+                        student_id=UUID(str(s["id"])),
+                        student_name=s.get("fullName") or "Student",
+                        cohort_id=cid,
+                        cohort_name=s.get("cohortName") or "BigO Academy",
+                        rank=rank_idx,
+                        rating=rating,
+                        performance_score=perf,
+                        problem_solved_count=solved_cnt,
+                        consistency_score=att_pct,
+                    )
+                )
+            if entries:
+                DjangoLeaderboardRepository().save_all(entries)
+    except Exception as exc:
+        logger.warning(f"Live leaderboard sync from academic-service failed: {exc}")
+
+
 class GlobalLeaderboardView(JWTAuthMixin, APIView):
     """GET /analytics/leaderboard"""
 
@@ -154,6 +222,9 @@ class GlobalLeaderboardView(JWTAuthMixin, APIView):
         if isinstance(user, Response):
             return user
 
+        # Sync live solve counts from academic service
+        _sync_leaderboard_from_academic(request.headers.get("Authorization", ""))
+
         from infrastructure.config.dependencies import (
             get_global_leaderboard_use_case,
         )
@@ -162,7 +233,7 @@ class GlobalLeaderboardView(JWTAuthMixin, APIView):
         )
 
         page = int(request.query_params.get("page", 0))
-        size = int(request.query_params.get("size", 20))
+        size = int(request.query_params.get("size", 100))
 
         use_case = get_global_leaderboard_use_case()
 
@@ -193,6 +264,8 @@ class CohortLeaderboardView(JWTAuthMixin, APIView):
         if isinstance(user, Response):
             return user
 
+        _sync_leaderboard_from_academic(request.headers.get("Authorization", ""))
+
         from infrastructure.config.dependencies import (
             get_cohort_leaderboard_use_case,
         )
@@ -201,7 +274,7 @@ class CohortLeaderboardView(JWTAuthMixin, APIView):
         )
 
         page = int(request.query_params.get("page", 0))
-        size = int(request.query_params.get("size", 20))
+        size = int(request.query_params.get("size", 100))
 
         use_case = get_cohort_leaderboard_use_case()
 

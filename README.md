@@ -1,12 +1,12 @@
 # BigO Academy
 
-A microservices-based learning management system built to digitize and scale the operations of [A2SV (Africa to Silicon Valley)](https://a2sv.org) — a program that trains African university students in software engineering and places them at top tech companies worldwide.
+A microservices-based learning management system built to digitize and scale the operations of BigO Academy — a program that trains university students in software engineering and places them at top tech companies worldwide.
 
 ---
 
 ## What This Project Does
 
-A2SV runs a rigorous multi-year software engineering curriculum. Managing hundreds of students across cohorts, tracking attendance, monitoring contest performance, processing monthly payments, and surfacing at-risk students — all of this was done manually. BigO Academy replaces that with a production-grade platform built on modern software engineering principles.
+BigO Academy runs a rigorous multi-year software engineering curriculum. Managing hundreds of students across cohorts, tracking attendance, monitoring contest performance, processing monthly payments, and surfacing at-risk students — all of this was done manually. BigO Academy replaces that with a production-grade platform built on modern software engineering principles.
 
 The system handles:
 - Student and teacher account management with role-based access control
@@ -219,4 +219,4 @@ Built by a team of 2 software engineering students, with a clean split between d
 
 ---
 
-*BigO Academy is named after the Big O notation — the language of algorithmic thinking that every A2SV student masters.*
+*BigO Academy is named after the Big O notation — the language of algorithmic thinking that every BigO Academy student masters.*

@@ -24,11 +24,14 @@ class Student(models.Model):
     assigned_teacher = models.ForeignKey(
         Teacher, null=True, blank=True, on_delete=models.SET_NULL, related_name="assigned_students"
     )
-    attendance_percentage = models.FloatField(default=0.0)
+    attendance_percentage = models.FloatField(default=100.0)
     active_warning_count = models.IntegerField(default=0)
+    codeforces_handle = models.CharField(max_length=100, null=True, blank=True)
     joined_at = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = models.Manager()
 
     class Meta:
         db_table = "student"
