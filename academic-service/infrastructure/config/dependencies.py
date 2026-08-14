@@ -11,6 +11,7 @@ long-lived confluent_kafka.Producer per process, which is the correct
 lifecycle for it (see kafka_event_publisher.py docstring).
 """
 from adapters.outbound.messaging.kafka_event_publisher import KafkaEventPublisher
+from adapters.outbound.messaging.kafka_event_publisher import ConsoleEventPublisher
 from adapters.outbound.persistence.attendance_repo import DjangoAttendanceRepository
 from adapters.outbound.persistence.cohort_repo import DjangoCohortRepository
 from adapters.outbound.persistence.contest_repo import DjangoContestRepository
@@ -104,7 +105,7 @@ _contest_repository = DjangoContestRepository()
 _warning_repository = DjangoWarningRepository()
 _mentorship_repository = DjangoMentorshipRepository()
 _warning_rules_repository = DjangoWarningRulesRepository()
-_event_publisher = KafkaEventPublisher()
+_event_publisher = ConsoleEventPublisher()
 
 
 # ── Student ──────────────────────────────────────────────────────────────
