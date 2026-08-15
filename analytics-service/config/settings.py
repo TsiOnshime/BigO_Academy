@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-fdp=w9u4u6jzrj&vx4^2zv%6e_3&n+6jd5&fv!-)n2#8m8io@u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config('ALLOWED_HOSTS', default='localhost').split(',')
+    if host.strip()
+]
 
 
 # Application definition
