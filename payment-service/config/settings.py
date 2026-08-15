@@ -71,7 +71,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
-        conn_max_age=600,
+        conn_max_age=0,
         ssl_require=True
     )
 }
