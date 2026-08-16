@@ -7,52 +7,46 @@ class Command(BaseCommand):
     help = 'Create initial users for BigO Academy'
 
     def handle(self, *args, **options):
-        from adapters.outbound.persistence.django_models import DjangoUser
+        # Import inside handle to avoid circular imports at startup
+        from django.apps import apps
+        DjangoUser = apps.get_model('core', 'DjangoUser')
 
         users = [
             {
                 "email": "tshimelis23@gmail.com",
-                "username": "tshimelis23@gmail.com",
                 "full_name": "Admin User",
                 "role": "ADMIN",
                 "status": "ACTIVE",
-                "password": make_password("-00C#n*&,49jJ"),
+                "hashed_password": make_password("-00C#n*&,49jJ"),
                 "must_change_password": False,
-                "is_staff": True,
-                "is_superuser": True,
+                "oauth_providers": [],
             },
             {
                 "email": "abelmesfin123@gmail.com",
-                "username": "abelmesfin123@gmail.com",
                 "full_name": "Abel Mesfin",
                 "role": "TEACHER",
                 "status": "ACTIVE",
-                "password": make_password("G9dcboZ6Jg&7"),
+                "hashed_password": make_password("G9dcboZ6Jg&7"),
                 "must_change_password": True,
-                "is_staff": False,
-                "is_superuser": False,
+                "oauth_providers": [],
             },
             {
                 "email": "abebe1989@gmail.com",
-                "username": "abebe1989@gmail.com",
                 "full_name": "Abebe Bekele",
                 "role": "STUDENT",
                 "status": "ACTIVE",
-                "password": make_password("X9b9f#tb3ec2"),
+                "hashed_password": make_password("X9b9f#tb3ec2"),
                 "must_change_password": True,
-                "is_staff": False,
-                "is_superuser": False,
+                "oauth_providers": [],
             },
             {
                 "email": "saribeyene183@gmail.com",
-                "username": "saribeyene183@gmail.com",
                 "full_name": "Sara Beyene",
                 "role": "STUDENT",
                 "status": "ACTIVE",
-                "password": make_password("mRtUsMVwjxkf"),
+                "hashed_password": make_password("mRtUsMVwjxkf"),
                 "must_change_password": True,
-                "is_staff": False,
-                "is_superuser": False,
+                "oauth_providers": [],
             },
         ]
 
