@@ -7,7 +7,6 @@ class Command(BaseCommand):
     help = 'Create initial users for BigO Academy'
 
     def handle(self, *args, **options):
-        # Import inside handle to avoid circular imports at startup
         from django.apps import apps
         DjangoUser = apps.get_model('core', 'DjangoUser')
 
@@ -54,10 +53,8 @@ class Command(BaseCommand):
             if DjangoUser.objects.filter(email=u["email"]).exists():
                 self.stdout.write(f"User {u['email']} already exists — skipping")
                 continue
-
             DjangoUser.objects.create(id=uuid.uuid4(), **u)
             self.stdout.write(
                 f"Created: {u['full_name']} ({u['email']}) — {u['role']}"
             )
-
         self.stdout.write("Done.")

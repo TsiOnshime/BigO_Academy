@@ -1,61 +1,55 @@
-from django.core.management.base import BaseCommand
-from django.contrib.auth.hashers import make_password
+"""
+Django ORM model for the User table.
+"""
 import uuid
+from django.db import models
+from domain.enums import UserRole, AccountStatus
 
 
-class Command(BaseCommand):
-    help = 'Create initial users for BigO Academy'
+class DjangoUser(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=150)
+    role = models.CharField(
+        max_length=10,
+        choices=[(role.value, role.name) for role in UserRole],
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=[(status.value, status.name) for status in AccountStatus],
+    )
+    hashed_password = models.CharField(max_length=255, null=True, blank=True)
+    oauth_providers = models.JSONField(default=list)
+    must_change_password = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def handle(self, *args, **options):
-        from adapters.outbound.persistence.django_models import DjangoUser
+    class Meta:
+        db_table = "core_user"
+        app_label = "core"
 
-        users = [
-            {
-                "email": "tshimelis23@gmail.com",
-                "full_name": "Admin User",
-                "role": "ADMIN",
-                "status": "ACTIVE",
-                "hashed_password": make_password("-00C#n*&,49jJ"),
-                "must_change_password": False,
-                "oauth_providers": [],
-            },
-            {
-                "email": "abelmesfin123@gmail.com",
-                "full_name": "Abel Mesfin",
-                "role": "TEACHER",
-                "status": "ACTIVE",
-                "hashed_password": make_password("G9dcboZ6Jg&7"),
-                "must_change_password": True,
-                "oauth_providers": [],
-            },
-            {
-                "email": "abebe1989@gmail.com",
-                "full_name": "Abebe Bekele",
-                "role": "STUDENT",
-                "status": "ACTIVE",
-                "hashed_password": make_password("X9b9f#tb3ec2"),
-                "must_change_password": True,
-                "oauth_providers": [],
-            },
-            {
-                "email": "saribeyene183@gmail.com",
-                "full_name": "Sara Beyene",
-                "role": "STUDENT",
-                "status": "ACTIVE",
-                "hashed_password": make_password("mRtUsMVwjxkf"),
-                "must_change_password": True,
-                "oauth_providers": [],
-            },
-        ]
+    def __str__(self) -> str:
+        return f"{self.email} ({self.role})"
 
-        for u in users:
-            if DjangoUser.objects.filter(email=u["email"]).exists():
-                self.stdout.write(f"User {u['email']} already exists — skipping")
-                continue
 
-            DjangoUser.objects.create(id=uuid.uuid4(), **u)
-            self.stdout.write(
-                f"Created: {u['full_name']} ({u['email']}) — {u['role']}"
-            )
+class DjangoOTP(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    email = models.EmailField()
+    otp_code = models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
-        self.stdout.write("Done.")
+    class Meta:
+        db_table = "core_otp"
+        app_label = "core"
+
+    def __str__(self):
+        return f"{self.email} ({self.otp_code})"
