@@ -7,11 +7,8 @@ class Command(BaseCommand):
     help = 'Create initial users for BigO Academy'
 
     def handle(self, *args, **options):
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        fields = [f.name for f in User._meta.get_fields()]
-        self.stdout.write(f"User model fields: {fields}")
-        return  # stop here for now
+        from adapters.outbound.persistence.django_models import DjangoUser
+
         users = [
             {
                 "email": "tshimelis23@gmail.com",
@@ -60,11 +57,13 @@ class Command(BaseCommand):
         ]
 
         for u in users:
-            if User.objects.filter(email=u["email"]).exists():
+            if DjangoUser.objects.filter(email=u["email"]).exists():
                 self.stdout.write(f"User {u['email']} already exists — skipping")
                 continue
 
-            User.objects.create(id=uuid.uuid4(), **u)
-            self.stdout.write(f"Created: {u['full_name']} ({u['email']}) — {u['role']}")
+            DjangoUser.objects.create(id=uuid.uuid4(), **u)
+            self.stdout.write(
+                f"Created: {u['full_name']} ({u['email']}) — {u['role']}"
+            )
 
         self.stdout.write("Done.")
