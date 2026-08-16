@@ -9,7 +9,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from django.contrib.auth import get_user_model
         User = get_user_model()
-
+        fields = [f.name for f in User._meta.get_fields()]
+        self.stdout.write(f"User model fields: {fields}")
+        return  # stop here for now
         users = [
             {
                 "email": "tshimelis23@gmail.com",
