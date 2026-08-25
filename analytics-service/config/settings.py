@@ -26,11 +26,7 @@ SECRET_KEY = 'django-insecure-fdp=w9u4u6jzrj&vx4^2zv%6e_3&n+6jd5&fv!-)n2#8m8io@u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in config('ALLOWED_HOSTS', default='localhost').split(',')
-    if host.strip()
-]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -51,7 +47,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -68,7 +63,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
-    "https://big-o-academy-frontend.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -170,6 +164,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+ACADEMIC_SERVICE_URL = config(
+    'ACADEMIC_SERVICE_URL',
+    default='http://localhost:8001/api/v1'
+)

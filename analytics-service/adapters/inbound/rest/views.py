@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.conf import settings
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -148,8 +149,18 @@ class StudentHistoryView(JWTAuthMixin, APIView):
         )
         
 # ── Leaderboard Views ─────────────────────────────────────────────────────
+last_sync_time = 0
+_SYNC_COOLDOWN_SECONDS = 300
 
 def _sync_leaderboard_from_academic(auth_header: str = "") -> None:
+    global last_sync_time
+    
+    now = time.time()
+    
+    if now - last_sync_time < _SYNC_COOLDOWN_SECONDS:
+        return
+    _last_sync_time = now
+    
     if getattr(settings, "TESTING", False):
         return
     try:
@@ -163,12 +174,17 @@ def _sync_leaderboard_from_academic(auth_header: str = "") -> None:
         headers = {}
         if auth_header:
             headers["Authorization"] = auth_header
-
-        resp = requests.get(
-            "http://localhost:8001/api/v1/students/",
-            headers=headers,
-            timeout=2.5,
+        academic_url = getattr(
+            settings,
+            "ACADEMIC_SERVICE_URL",
+            "http://localhost:8001/api/v1"
         )
+        resp = requests.get(
+            f"{academic_url}/students/",
+            headers=headers,
+            timeout=5,
+        )
+
         if resp.status_code == 200:
             st_data = resp.json().get("students", [])
             # Sort by total rating (CF rating bonus + solved count bonus), then solvedCount, then attendance

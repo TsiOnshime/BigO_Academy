@@ -31,7 +31,18 @@ class DjangoUser(models.Model):
     class Meta:
         db_table = "core_user"
         app_label = "core"
-
+        indexes = [
+            # Login query — lookup by email is the most frequent auth query
+            models.Index(
+                fields=["email"],
+                name="idx_user_email",
+            ),
+            # Admin user list filtered by role
+            models.Index(
+                fields=["role", "status"],
+                name="idx_user_role_status",
+            ),
+        ]
     def __str__(self) -> str:
         return f"{self.email} ({self.role})"
 

@@ -26,7 +26,28 @@ class StudentAnalyticsModel(models.Model):
     
     class Meta:
         db_table = "student_analytics"
-    
+        indexes = [
+            # Top performers per cohort — used by teacher analytics
+            models.Index(
+                fields=["cohort_id", "-performance_score"],
+                name="idx_analytics_cohort_perf",
+            ),
+            # At-risk students query: attendance < 60 OR performance < 40
+            models.Index(
+                fields=["cohort_id", "attendance_percentage"],
+                name="idx_analytics_attendance",
+            ),
+            # Global rank ordering — used by leaderboard
+            models.Index(
+                fields=["rank"],
+                name="idx_analytics_rank",
+            ),
+            # Warning count filter — finds at-risk students
+            models.Index(
+                fields=["active_warning_count"],
+                name="idx_analytics_warnings",
+            ),
+        ]
     def __str__(self):
         return f"StudentAnalytics({self.student_id}, rank={self.rank})"
 
@@ -58,6 +79,23 @@ class LeaderboardEntryModel(models.Model):
         db_table = "leaderboard_entry"
         ordering = ["rank"]
         unique_together = [("student_id", "cohort_id")]
+        indexes = [
+            # Global leaderboard — most common query, ORDER BY rank
+            models.Index(
+                fields=["rank"],
+                name="idx_leaderboard_rank",
+            ),
+            # Cohort leaderboard — filter by cohort then order by rank
+            models.Index(
+                fields=["cohort_id", "rank"],
+                name="idx_leaderboard_cohort_rank",
+            ),
+            # Lookup by student — used in student analytics view
+            models.Index(
+                fields=["student_id"],
+                name="idx_leaderboard_student",
+            ),
+        ]
 
     def __str__(self):
         return (
@@ -91,7 +129,18 @@ class HistoricalMetricModel(models.Model):
         db_table = "historical_metric"
         unique_together = [("student_id", "snapshot_date")]
         ordering = ["snapshot_date"]
-
+        indexes = [
+            # Student history queries — filter by student, order by date
+            models.Index(
+                fields=["student_id", "snapshot_date"],
+                name="idx_history_student_date",
+            ),
+            # Date range queries — from/to date filtering
+            models.Index(
+                fields=["snapshot_date"],
+                name="idx_history_date",
+            ),
+        ]
     def __str__(self):
         return (
             f"HistoricalMetric("
@@ -128,9 +177,13 @@ class CohortAnalyticsModel(models.Model):
 
     class Meta:
         db_table = "cohort_analytics"
-
-    def __str__(self):
-        return f"CohortAnalytics({self.cohort_id})"
+        indexes = [
+            # Sort cohorts by performance for admin dashboard
+            models.Index(
+                fields=["-average_performance_score"],
+                name="idx_cohort_perf",
+            ),
+        ]
 
 
 class AnalyticsReportModel(models.Model):

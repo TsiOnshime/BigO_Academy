@@ -27,7 +27,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [ 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware', 
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware', 
     'django.middleware.common.CommonMiddleware', 
     'django.middleware.csrf.CsrfViewMiddleware', 
@@ -44,7 +43,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:5175",
     "http://127.0.0.1:5175",
-    "https://big-o-academy-frontend.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
  
@@ -67,6 +65,17 @@ TEMPLATES = [
 ] 
  
 WSGI_APPLICATION = 'config.wsgi.application' 
+ 
+# DATABASES = { 
+#     'default': { 
+#         'ENGINE': 'django.db.backends.postgresql', 
+#         'NAME': config('DB_NAME'), 
+#         'USER': config('DB_USER'), 
+#         'PASSWORD': config('DB_PASSWORD'), 
+#         'HOST': config('DB_HOST', default='localhost'), 
+#         'PORT': config('DB_PORT', default='5432'), 
+#     } 
+# } 
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -75,7 +84,6 @@ DATABASES = {
         ssl_require=True
     )
 }
-
  
 LANGUAGE_CODE = 'en-us' 
 TIME_ZONE = 'UTC' 
@@ -94,13 +102,9 @@ REST_FRAMEWORK = {
  
 KAFKA_BOOTSTRAP_SERVERS = config('KAFKA_BOOTSTRAP_SERVERS', 
 default='localhost:9092') 
-
+ 
 JWT_SECRET_KEY = config(
     'JWT_SECRET_KEY',
     default='django-insecure-^s0)!65!%2sgjnpdp%_v__!)353^s^sscl=mi(!tjfge_scf!9',
 )
 JWT_ALGORITHM = config('JWT_ALGORITHM', default='HS256') 
-
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

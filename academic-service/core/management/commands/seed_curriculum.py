@@ -31,6 +31,7 @@ class Command(BaseCommand):
         students_data = [
             ("b5bfc8ce-aea5-42ab-9d9e-e9d3be0fe7e6", "Test Student", "student@example.com"),
             ("f18eb754-ab79-4de3-8afa-d93dad6c764b", "Tsion Shimelis", "tsionshimelis900@gmail.com"),
+            ("59b57948-355d-4454-a1be-01e535d4fbe7", "Abebe Bekele", "abebe1989@gmail.com")
         ]
 
         for u_id_str, name, email in students_data:

@@ -35,6 +35,22 @@ class Student(models.Model):
 
     class Meta:
         db_table = "student"
-
+        indexes = [
+        # List students by cohort — most common academic query
+        models.Index(
+        fields=["cohort", "status"],
+        name="idx_student_cohort_status",
+        ),
+        # Attendance queries — at-risk detection
+        models.Index(
+        fields=["cohort", "attendance_percentage"],
+        name="idx_student_cohort_attendance",
+        ),
+        # Year phase filter — promotion eligibility checks
+        models.Index(
+        fields=["cohort", "year_phase", "status"],
+        name="idx_student_cohort_year_status",
+        ),
+]
     def __str__(self):
         return f"{self.full_name} ({self.status})"
