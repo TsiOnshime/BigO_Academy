@@ -10,6 +10,7 @@ django-types==0.24.0
 djangorestframework==3.17.1
 drf-spectacular==0.30.0
 drf-spectacular-sidecar==2026.7.1
+gunicorn==26.0.0
 idna==3.18
 inflection==0.5.1
 iniconfig==2.3.0

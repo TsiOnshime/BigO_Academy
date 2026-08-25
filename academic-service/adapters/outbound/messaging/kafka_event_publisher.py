@@ -201,3 +201,28 @@ class KafkaEventPublisher(EventPublisherPort):
         signal handler or management command teardown) — not after every
         publish, which would defeat the point of buffering."""
         self._producer.flush(timeout)
+        
+class ConsoleEventPublisher(EventPublisherPort):
+    """Development/production fallback — logs events instead of sending to Kafka."""
+
+    def _log(self, topic: str, payload: dict) -> None:
+        logger.info("EVENT %s: %s", topic, json.dumps(payload, default=_json_default))
+
+    def publish_student_created(self, student): self._log("academic.student.created", {"student_id": str(student.id)})
+    def publish_student_status_changed(self, student, old_status): self._log("academic.student.status_changed", {"student_id": str(student.id)})
+    def publish_student_promoted(self, student): self._log("academic.student.promoted", {"student_id": str(student.id)})
+    def publish_student_graduated(self, student): self._log("academic.student.graduated", {"student_id": str(student.id)})
+    def publish_student_dropped(self, student): self._log("academic.student.dropped", {"student_id": str(student.id)})
+    def publish_teacher_created(self, teacher): self._log("academic.teacher.created", {"teacher_id": str(teacher.id)})
+    def publish_teacher_status_changed(self, teacher): self._log("academic.teacher.status_changed", {"teacher_id": str(teacher.id)})
+    def publish_teacher_assigned_to_cohort(self, teacher_id, cohort_id): self._log("academic.teacher.assigned", {})
+    def publish_teacher_unassigned_from_cohort(self, teacher_id, cohort_id): self._log("academic.teacher.unassigned", {})
+    def publish_cohort_created(self, cohort): self._log("academic.cohort.created", {"cohort_id": str(cohort.id)})
+    def publish_cohort_updated(self, cohort): self._log("academic.cohort.updated", {"cohort_id": str(cohort.id)})
+    def publish_cohort_archived(self, cohort): self._log("academic.cohort.archived", {"cohort_id": str(cohort.id)})
+    def publish_problem_solved(self, student_id, problem_id, attempts, solve_time_minutes): self._log("academic.problem.solved", {})
+    def publish_attendance_updated(self, student_id, session_id, status): self._log("academic.attendance.updated", {})
+    def publish_contest_finished(self, contest_id, cohort_id, results): self._log("academic.contest.finished", {})
+    def publish_warning_issued(self, warning): self._log("academic.warning.issued", {"warning_id": str(warning.id)})
+    def publish_warning_resolved(self, warning): self._log("academic.warning.resolved", {"warning_id": str(warning.id)})
+    def flush(self, timeout=10.0): pass
