@@ -14,13 +14,10 @@ gunicorn==26.0.0
 idna==3.18
 inflection==0.5.1
 iniconfig==2.3.0
-jsonschema==4.26.0
-jsonschema-specifications==2025.9.1
 packaging==26.2
 pluggy==1.6.0
 psycopg2-binary==2.9.12
 Pygments==2.20.0
-PyJWT==2.10.1
 pytest==9.1.1
 pytest-django==4.12.0
 python-decouple==3.8
@@ -33,3 +30,4 @@ types-psycopg2==2.9.21.20260724
 uritemplate==4.2.0
 urllib3==2.7.0
 whitenoise==6.12.0
+sqlparse==0.5.5
