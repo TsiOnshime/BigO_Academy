@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from django.conf import settings
 import logging
 import time
-
+import hashlib
+import json
 logger = logging.getLogger(__name__)
 
 from adapters.inbound.rest.auth import JWTAuthMixin
@@ -25,6 +26,10 @@ from domain.exceptions import (
     TeacherAnalyticsNotFoundError,
 )
 
+def make_etag(data: dict | list)-> str:
+    """Generate an ETag from response data."""
+    content = json.dumps(data, sort_keys=True, default=str)
+    return hashlib.md5(content.encode()).hexdigest()
 
 def error_response(status_code, error, message):
     return Response(
@@ -154,12 +159,12 @@ _SYNC_COOLDOWN_SECONDS = 300
 
 def _sync_leaderboard_from_academic(auth_header: str = "") -> None:
     global last_sync_time
-    
+
     now = time.time()
     
     if now - last_sync_time < _SYNC_COOLDOWN_SECONDS:
         return
-    _last_sync_time = now
+    last_sync_time = now
     
     if getattr(settings, "TESTING", False):
         return
@@ -263,12 +268,21 @@ class GlobalLeaderboardView(JWTAuthMixin, APIView):
 
         last_refreshed = DjangoLeaderboardRepository().get_last_refreshed()
 
-        return Response(
-            {
+        data = {
                 "lastRefreshed": last_refreshed,
                 "entries": LeaderboardEntrySerializer(result, many=True).data,
             }
-        )
+        
+        etag = f'"{make_etag(data)}"'
+        
+        if request.headers.get("If-None-Match") == etag:
+            from django.http import HttpResponse
+            return HttpResponse(status=304)
+
+        response = Response(data)
+        response["ETag"] = etag
+        response["Cache-Control"] = "private, max-age=300"
+        return response
 
 
 class CohortLeaderboardView(JWTAuthMixin, APIView):
@@ -301,12 +315,20 @@ class CohortLeaderboardView(JWTAuthMixin, APIView):
                 size=size,
             )
         )
-
-        return Response(
-            {
-                "entries": LeaderboardEntrySerializer(result, many=True).data,
-            }
-        )
+        data = {"entries": LeaderboardEntrySerializer(result, many=True).data,}
+        
+        etag = f'"{make_etag(data)}"'
+        
+        if request.headers.get("If-None-Match") == etag:
+            from django.http import HttpResponse
+            return HttpResponse(status=304)
+        
+        response = Response(data)
+        response["ETag"] = etag
+        response["Cache-Control"] = "private, max-age=300"
+        
+        return response
+        
 
 
 # ── Teacher Analytics Views ───────────────────────────────────────────────
